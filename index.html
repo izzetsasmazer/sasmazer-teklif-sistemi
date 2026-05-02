@@ -1,0 +1,1004 @@
+
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Şaşmazer Teklif Sistemi</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#071426}
+    header{background:#c90000;color:white;padding:24px 18px}
+    .wrap{max-width:1180px;margin:auto}
+    h1{margin:0;font-size:26px}
+    .sub{font-size:13px;margin-top:6px;font-weight:600}
+    main{max-width:1180px;margin:22px auto;padding:0 14px}
+    .card{background:white;border-radius:14px;box-shadow:0 4px 18px #0001;padding:18px;margin-bottom:16px}
+    .status{padding:13px;border-radius:10px;margin-bottom:12px}
+    .ok{background:#dff5e4;color:#175c2b}
+    .err{background:#ffe0e0;color:#8a0000}
+    .load{background:#fff3cd;color:#7a5400}
+    label{font-weight:bold}
+    input{width:100%;box-sizing:border-box;padding:14px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px}
+    .hint{font-size:12px;color:#33506f;margin-top:8px}
+    .results{display:grid;gap:8px;margin-top:10px}
+    .result{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #e3e7ee;border-radius:10px;padding:12px;background:#fbfcff}
+    .result.added{background:#f2f9f5;border-color:#8bd0a6}
+    .rtitle{font-weight:bold}
+    .muted{color:#33506f;font-size:12px}
+    .priceLine{font-size:14px;margin-top:4px}
+    button{border:0;border-radius:9px;padding:9px 13px;background:#1767c2;color:white;font-weight:bold;cursor:pointer}
+    button.red{background:#d9251d}
+    button:disabled{background:#91b5df;cursor:not-allowed}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #edf0f5;text-align:right;font-size:14px;white-space:nowrap}
+    th:first-child,td:first-child{text-align:left;white-space:normal}
+    .setHead td{background:#fff2c7!important;border-top:1px solid #f2d36b;border-bottom:1px solid #f2d36b;color:#704300;font-weight:bold}
+    .singleHead td{background:#e4f2ff!important;color:#004070;font-weight:bold}
+    .setRow td{background:#fffdf5}
+    .disc{color:#d9251d}
+    .support{color:#008a35;font-weight:bold}
+    .net{color:#003b75;font-weight:bold}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e8f3ff;color:#004a92;font-size:12px;font-weight:bold}
+    .badgeSet{background:#fff1ba;color:#946000}
+    .qty{display:flex;gap:7px;justify-content:flex-end;align-items:center}
+    .qty button{padding:5px 9px;background:#edf1f7;color:#101828}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .summaryLine{display:flex;justify-content:space-between;gap:12px;margin:7px 0}
+    .total{font-size:26px;font-weight:bold;color:#002b5c}
+    .noteBox{border:1px solid #d6e2ef;background:#f8fbff;border-radius:8px;padding:10px;font-size:12px;color:#183b5c;margin:8px 0 12px}
+    .campBox{border:2px solid #ffb000;background:#fffaf0;border-radius:12px;padding:14px;margin-top:12px}
+    .campTitle{font-weight:bold;color:#8a4b00;margin-bottom:8px}
+    .campItem{background:white;border:1px solid #f3d27a;border-radius:8px;padding:10px;margin:8px 0}
+    .small{font-size:12px;color:#33506f}
+    .hr{border-top:1px solid #aaa;margin:10px 0}
+
+    .payGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}
+    .payBox{border:1px solid #d8e1ed;border-radius:14px;padding:14px;background:#ffffff;box-shadow:0 4px 14px #0000000d}
+    .payBox h3{margin:0 0 12px;padding:10px 12px;border-radius:10px;color:#000;font-size:20px;text-align:center}
+    .payBox.low h3{background:#f00000;color:white}
+    .payBox.high h3{background:#fff200;color:#000}
+    .payTable{width:100%;border-collapse:separate;border-spacing:0 6px}
+    .payTable td{padding:12px 14px;font-size:17px;border:0}
+    .payTable td:first-child{width:42%;text-align:center;font-weight:800;color:#000;border-radius:9px 0 0 9px}
+    .payTable td:last-child{text-align:right;font-size:22px;font-weight:900;color:#002b5c;border-radius:0 9px 9px 0}
+    .payTable tr:nth-child(1) td{background:#c9d7f0}
+    .payTable tr:nth-child(2) td{background:#ffe6a3}
+    .payTable tr:nth-child(3) td{background:#e9e9e9}
+    .payTable tr:nth-child(4) td{background:#f7c6a7}
+    .payTable tr:nth-child(5) td{background:#b9d99d}
+
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .payGrid{grid-template-columns:1fr}
+      .result{display:block}
+      .result button{width:100%;margin-top:8px}
+      th,td{font-size:12px;padding:8px}
+      th:nth-child(2),td:nth-child(2){display:none}
+      th:nth-child(5),td:nth-child(5){display:none}
+      .summaryLine{display:block}
+      .payTable td{font-size:15px;padding:10px}
+      .payTable td:last-child{font-size:20px}
+    }
+
+    @media(max-width:600px){
+      .payGrid{grid-template-columns:1fr;gap:12px}
+      .payBox{padding:10px}
+      .payBox h3{font-size:17px;padding:8px;margin-bottom:8px}
+      .payTable{border-spacing:0 5px}
+      .payTable tr{display:grid;grid-template-columns:42% 58%;border-radius:8px;overflow:hidden}
+      .payTable td{display:flex;align-items:center;box-sizing:border-box;border:0;padding:9px 10px}
+      .payTable td:first-child{width:auto!important;justify-content:center;text-align:center!important;font-size:14px;font-weight:800;border-radius:0!important}
+      .payTable td:last-child{width:auto!important;justify-content:flex-end;text-align:right!important;font-size:18px!important;font-weight:900;color:#002b5c;border-radius:0!important;white-space:nowrap}
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="wrap">
+    <h1>Şaşmazer Teklif Sistemi</h1>
+    <div class="sub">Tüm ürünlü fiyat, alış/PP, Paro ve kombin kampanya hesaplama</div>
+  </div>
+</header>
+
+<main>
+  <div id="status" class="status load">Ürün dosyası yükleniyor...</div>
+
+  <div class="card">
+    <label>Ürün Ara</label>
+    <input id="search" placeholder="Ürün adı veya SAP kodu yazın. Örn: 10120, TKM, 2030, AFC..." autocomplete="off" />
+    <div class="hint">Ürün aramak için yukarıya ürün adı veya SAP kodu yazın.</div>
+    <div id="results" class="results"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+      <h2 style="margin:0 0 10px">Seçilen Ürünler</h2>
+      <button class="red" onclick="clearCart()">Temizle</button>
+    </div>
+
+    <div class="noteBox">
+      Sarı bloklar kombin kampanya setidir. Mavi blok tekli veya sete girmeyen ürünlerdir.
+      Ürün satırlarında tekil Paro ve Paro destek bilgi olarak görünür.
+      Sete giren üründe tekil Paro satıştan tekrar düşmez; set maliyet desteği alış maliyetinden düşer.
+      BE/Klima + Dondurucu kampanyası sadece Excel’deki kod listesine göre eşleşir.
+    </div>
+
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Ürün</th>
+            <th>Alış / PP</th>
+            <th>Satış</th>
+            <th>Tekil Paro</th>
+            <th>Paro Destek</th>
+            <th>Tekil İndirimli</th>
+            <th>Durum</th>
+            <th>Adet</th>
+            <th>Satır Toplamı</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="cartBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 style="margin-top:0">Alış / Maliyet Analizi</h2>
+      <div class="summaryLine"><span>Brüt Alış / PP:</span><b id="grossCost">₺0</b></div>
+      <div class="summaryLine support"><span>Maliyet Destekleri:</span><b id="costSupport">₺0</b></div>
+      <div class="hr"></div>
+      <div class="summaryLine total"><span>Net Alış Maliyeti:</span><b id="netCost">₺0</b></div>
+      <div class="small">Net alış = Brüt PP alış - set dışı tekil Paro destekleri - kombin maliyet destekleri.</div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Satış Analizi</h2>
+      <div class="summaryLine"><span>İndirimsiz Satış:</span><b id="grossSales">₺0</b></div>
+      <div class="summaryLine disc"><span>Set Dışı Paro İndirimi:</span><b id="singleParoDiscount">₺0</b></div>
+      <div class="summaryLine disc"><span>Kombin İndirimi:</span><b id="bundleDiscount">₺0</b></div>
+      <div class="hr"></div>
+      <div class="summaryLine total"><span>İndirimli Satış Fiyatı:</span><b id="netSales">₺0</b></div>
+      <div class="small">Satış indirimi detayı: Set dışı Paro + kombin kampanya indirimi. Set içindeki tekil Paro sadece bilgi amaçlı gösterilir.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Ödeme Seçeneği</h2>
+    <div class="small">Aşağıdaki fiyatlar Excel’deki ödeme formülüne göre Net Alış Maliyeti üzerinden hesaplanır.</div>
+
+    <div class="payGrid">
+      <div class="payBox low">
+        <h3>KAR %3</h3>
+        <table class="payTable">
+          <tbody id="payTable3"></tbody>
+        </table>
+      </div>
+
+      <div class="payBox high">
+        <h3>KAR %5</h3>
+        <table class="payTable">
+          <tbody id="payTable5"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="campaignDetails"></div>
+</main>
+
+<script>
+const FILE_NAME = "sasmazer-web-data.xlsx";
+
+const FIXED_SUPPORT = {
+  SOGUTUCU_TKM: 10114,
+  KURUTUCU_TV: 9179,
+  BE_DONDURUCU: 9342,
+  ANK_UCLU: 12750
+};
+
+const FIXED_SALE_DISCOUNT = {
+  SOGUTUCU_TKM: 11899,
+  KURUTUCU_TV: 10799,
+  BE_DONDURUCU: 10990,
+  ANK_UCLU: 15000
+};
+
+let products = [];
+let paroMap = new Map();
+let bundleRules = [];
+let cart = [];
+let latestCalc = null;
+
+const $ = id => document.getElementById(id);
+
+function norm(v){
+  return String(v ?? "")
+    .trim()
+    .toLocaleUpperCase("tr-TR")
+    .replaceAll("İ","I")
+    .replaceAll("İ","I")
+    .replaceAll("Ş","S")
+    .replaceAll("Ğ","G")
+    .replaceAll("Ü","U")
+    .replaceAll("Ö","O")
+    .replaceAll("Ç","C")
+    .replace(/\s+/g," ");
+}
+
+function codeNorm(v){
+  return norm(v).replace(/\.0$/,"");
+}
+
+function num(v){
+  if(v === null || v === undefined || v === "") return 0;
+  if(typeof v === "number") return isFinite(v) ? v : 0;
+  let s = String(v).replaceAll("₺","").replaceAll(" ","").replace(/\./g,"").replace(",",".");
+  let n = Number(s);
+  return isFinite(n) ? n : 0;
+}
+
+function money(v){
+  const n = Math.round(num(v));
+  return "₺" + n.toLocaleString("tr-TR");
+}
+
+function negMoney(v){
+  const n = Math.round(num(v));
+  if(!n) return "-";
+  return "-₺" + n.toLocaleString("tr-TR");
+}
+
+function splitList(v){
+  return String(v ?? "")
+    .split("|")
+    .map(x => codeNorm(x))
+    .filter(Boolean);
+}
+
+function setStatus(text, cls){
+  $("status").className = "status " + cls;
+  $("status").textContent = text;
+}
+
+function findSheet(workbook, wanted){
+  const nWanted = norm(wanted);
+  return workbook.SheetNames.find(n => norm(n) === nWanted);
+}
+
+async function loadExcel(){
+  try{
+    setStatus("Ürün dosyası yükleniyor...", "load");
+
+    const res = await fetch(FILE_NAME + "?v=" + Date.now());
+    if(!res.ok) throw new Error("Excel dosyası bulunamadı: " + FILE_NAME);
+
+    const buf = await res.arrayBuffer();
+    const wb = XLSX.read(buf, {type:"array"});
+
+    const productsSheet = findSheet(wb, "WEB_EXPORT_PRODUCTS");
+    const paroSheet = findSheet(wb, "WEB_EXPORT_PARO");
+    const rulesSheet = findSheet(wb, "WEB_EXPORT_BUNDLE_RULES");
+
+    if(!productsSheet) throw new Error("WEB_EXPORT_PRODUCTS sayfası bulunamadı.");
+    if(!paroSheet) throw new Error("WEB_EXPORT_PARO sayfası bulunamadı.");
+    if(!rulesSheet) throw new Error("WEB_EXPORT_BUNDLE_RULES sayfası bulunamadı.");
+
+    const productRows = XLSX.utils.sheet_to_json(wb.Sheets[productsSheet], {defval:""});
+    const paroRows = XLSX.utils.sheet_to_json(wb.Sheets[paroSheet], {defval:""});
+    const ruleRows = XLSX.utils.sheet_to_json(wb.Sheets[rulesSheet], {defval:""});
+
+    products = productRows.map((r, i) => {
+      const code = codeNorm(r.sap_kodu);
+      const name = String(r.urun_adi ?? "").trim();
+      const group = String(r.hedef_grup ?? "").trim();
+      const brand = String(r.marka ?? "").trim();
+
+      return {
+        id: code || ("ROW_" + i),
+        code,
+        name,
+        group,
+        brand,
+        pp: num(r.pp_fiyat),
+        sales: num(r.perakende_fiyat),
+        nCode: code,
+        nName: norm(name),
+        nGroup: norm(group),
+        qty: 0,
+        paroDiscount: 0,
+        paroSupport: 0,
+        paroName: ""
+      };
+    }).filter(p => p.code && p.name && p.sales > 0);
+
+    paroMap = new Map();
+
+    for(const r of paroRows){
+      const c = codeNorm(r.urun_kodu);
+      const discount = num(r.indirim_tutari);
+      const support = num(r.arcelik_katilim);
+
+      if(!c || discount <= 0) continue;
+
+      const old = paroMap.get(c);
+
+      if(!old || discount > old.discount){
+        paroMap.set(c, {
+          discount,
+          support,
+          name: String(r.kampanya_kisa_tanimi || r.urun_tanimi || "").trim()
+        });
+      }
+    }
+
+    for(const p of products){
+      const pr = paroMap.get(p.code);
+      if(pr){
+        p.paroDiscount = pr.discount;
+        p.paroSupport = pr.support;
+        p.paroName = pr.name;
+      }
+    }
+
+    bundleRules = ruleRows.map(r => {
+      const ruleId = norm(r.rule_id);
+      const name = String(r.kampanya_adi ?? "").trim();
+
+      return {
+        ruleId,
+        name,
+        saleDiscount: FIXED_SALE_DISCOUNT[ruleId] || num(r.kampanya_indirimi),
+        support: FIXED_SUPPORT[ruleId] || 0,
+        leftCodes: new Set(splitList(r.sol_kodlar)),
+        rightCodes: new Set(splitList(r.sag_kodlar)),
+        leftNames: splitList(r.sol_urunler),
+        rightNames: splitList(r.sag_urunler)
+      };
+    }).filter(r => r.ruleId);
+
+    setStatus(products.length + " ürün yüklendi. Paro ve kombin kampanya eşleşmesi aktif.", "ok");
+    renderAll();
+
+  }catch(e){
+    console.error(e);
+    setStatus("Hata: " + e.message, "err");
+  }
+}
+
+function clearSearchBox(){
+  $("search").value = "";
+  $("results").innerHTML = "";
+}
+
+function isAdded(productId){
+  return cart.some(x => x.id === productId);
+}
+
+function addProduct(productId){
+  const p = products.find(x => x.id === productId);
+  if(!p) return;
+
+  const item = cart.find(x => x.id === productId);
+
+  if(item) item.qty++;
+  else cart.push({...p, qty:1});
+
+  clearSearchBox();
+  renderCart();
+  $("search").focus();
+}
+
+function removeOneProduct(productId){
+  const item = cart.find(x => x.id === productId);
+  if(!item) return;
+
+  item.qty -= 1;
+
+  if(item.qty <= 0){
+    cart = cart.filter(x => x.id !== productId);
+  }
+
+  renderAll();
+}
+
+function removeUnit(unitId){
+  const productId = String(unitId).split("__")[0];
+  removeOneProduct(productId);
+}
+
+function removeAllProduct(productId){
+  cart = cart.filter(x => x.id !== productId);
+  renderAll();
+}
+
+function changeQty(productId, delta){
+  const item = cart.find(x => x.id === productId);
+  if(!item) return;
+
+  item.qty += delta;
+
+  if(item.qty <= 0){
+    cart = cart.filter(x => x.id !== productId);
+  }
+
+  renderAll();
+}
+
+function clearCart(){
+  cart = [];
+  renderAll();
+}
+
+function expandedCartUnits(){
+  const units = [];
+
+  for(const item of cart){
+    for(let i=0; i<item.qty; i++){
+      units.push({
+        unitId: item.id + "__" + i,
+        p: item
+      });
+    }
+  }
+
+  return units;
+}
+
+function productText(p){
+  return norm([p.code,p.name,p.group,p.brand].join(" "));
+}
+
+function codeInSet(p, set){
+  return set && set.has(codeNorm(p.code));
+}
+
+function nameInList(p, list){
+  const t = productText(p);
+  return list.some(x => x && t.includes(x));
+}
+
+function isAnkastreFirin(p){
+  const t = productText(p);
+  const name = norm(p.name);
+
+  return (
+    t.includes("ANKASTRE FIRIN") ||
+    name.startsWith("AFC ") ||
+    name.startsWith("AFM ") ||
+    name.startsWith("BFC ")
+  );
+}
+
+function isAnkastreOcak(p){
+  const t = productText(p);
+  const name = norm(p.name);
+
+  return (
+    t.includes("ANKASTRE OCAK") ||
+    name.startsWith("OCD ") ||
+    name.startsWith("OMD ") ||
+    name.startsWith("OV ") ||
+    name.startsWith("OI ")
+  );
+}
+
+function isAnkastreDavlumbaz(p){
+  const t = productText(p);
+  const name = norm(p.name);
+
+  return (
+    t.includes("ANKASTRE DAVLUMBAZ") ||
+    t.includes("ANKASTRE ASPIRATOR") ||
+    name.startsWith("ADE ") ||
+    name.startsWith("ADT ") ||
+    name.startsWith("ADF ") ||
+    name.startsWith("ADP ") ||
+    name.startsWith("P 171") ||
+    name.startsWith("P 181") ||
+    name.startsWith("MA 2030") ||
+    name.startsWith("MA 2521")
+  );
+}
+
+function buildRuleApplications(){
+  const units = expandedCartUnits();
+  const apps = [];
+
+  for(const r of bundleRules){
+    if(r.ruleId === "ANK_UCLU") continue;
+
+    const left = [];
+    const right = [];
+
+    for(const u of units){
+      const p = u.p;
+
+      let isLeft = false;
+      let isRight = false;
+
+      if(r.ruleId === "BE_DONDURUCU"){
+        isLeft = codeInSet(p, r.leftCodes);
+        isRight = codeInSet(p, r.rightCodes);
+      }else{
+        isLeft = codeInSet(p, r.leftCodes) || nameInList(p, r.leftNames);
+        isRight = codeInSet(p, r.rightCodes) || nameInList(p, r.rightNames);
+      }
+
+      if(isLeft) left.push(u);
+      if(isRight) right.push(u);
+    }
+
+    for(const a of left){
+      for(const b of right){
+        if(a.unitId === b.unitId) continue;
+
+        apps.push({
+          id: r.ruleId + "__" + a.unitId + "__" + b.unitId,
+          ruleId: r.ruleId,
+          name: r.name,
+          discount: r.saleDiscount,
+          support: r.support,
+          units: [a,b]
+        });
+      }
+    }
+  }
+
+  const ankRule = bundleRules.find(r => r.ruleId === "ANK_UCLU");
+
+  if(ankRule){
+    const ovens = units.filter(u => isAnkastreFirin(u.p));
+    const hobs = units.filter(u => isAnkastreOcak(u.p));
+    const hoods = units.filter(u => isAnkastreDavlumbaz(u.p));
+
+    for(const f of ovens){
+      for(const o of hobs){
+        for(const d of hoods){
+          const ids = new Set([f.unitId, o.unitId, d.unitId]);
+          if(ids.size !== 3) continue;
+
+          apps.push({
+            id: "ANK_UCLU__" + f.unitId + "__" + o.unitId + "__" + d.unitId,
+            ruleId: "ANK_UCLU",
+            name: ankRule.name || "Ankastre fırın + ocak + davlumbaz kampanyası",
+            discount: FIXED_SALE_DISCOUNT.ANK_UCLU,
+            support: FIXED_SUPPORT.ANK_UCLU,
+            units: [f,o,d]
+          });
+        }
+      }
+    }
+  }
+
+  apps.sort((a,b) => {
+    if(b.discount !== a.discount) return b.discount - a.discount;
+    return b.support - a.support;
+  });
+
+  return apps;
+}
+
+function chooseBestCampaigns(){
+  const apps = buildRuleApplications();
+  const allUnits = expandedCartUnits();
+
+  let best = {
+    score: -1,
+    totalSalesDiscount: 0,
+    totalCostSupport: 0,
+    chosen: []
+  };
+
+  function evaluate(chosen, used){
+    let bundleDiscount = 0;
+    let bundleSupport = 0;
+
+    for(const app of chosen){
+      bundleDiscount += app.discount;
+      bundleSupport += app.support;
+    }
+
+    let outsideParoDiscount = 0;
+    let outsideParoSupport = 0;
+
+    for(const unit of allUnits){
+      if(!used.has(unit.unitId)){
+        outsideParoDiscount += unit.p.paroDiscount || 0;
+        outsideParoSupport += unit.p.paroSupport || 0;
+      }
+    }
+
+    const totalSalesDiscount = bundleDiscount + outsideParoDiscount;
+    const totalCostSupport = bundleSupport + outsideParoSupport;
+    const score = totalSalesDiscount * 100000 + totalCostSupport;
+
+    return {
+      score,
+      totalSalesDiscount,
+      totalCostSupport
+    };
+  }
+
+  function backtrack(idx, used, chosen){
+    const ev = evaluate(chosen, used);
+
+    if(ev.score > best.score){
+      best = {
+        score: ev.score,
+        totalSalesDiscount: ev.totalSalesDiscount,
+        totalCostSupport: ev.totalCostSupport,
+        chosen: chosen.slice()
+      };
+    }
+
+    if(idx >= apps.length) return;
+
+    for(let i=idx; i<apps.length; i++){
+      const app = apps[i];
+
+      if(app.units.some(u => used.has(u.unitId))) continue;
+
+      const nextUsed = new Set(used);
+
+      for(const u of app.units){
+        nextUsed.add(u.unitId);
+      }
+
+      chosen.push(app);
+      backtrack(i + 1, nextUsed, chosen);
+      chosen.pop();
+    }
+  }
+
+  backtrack(0, new Set(), []);
+  return best;
+}
+
+function calculate(){
+  const units = expandedCartUnits();
+  const best = chooseBestCampaigns();
+  const used = new Map();
+
+  for(const app of best.chosen){
+    for(const u of app.units){
+      used.set(u.unitId, app);
+    }
+  }
+
+  let grossCost = 0;
+  let grossSales = 0;
+  let singleParoDiscount = 0;
+  let singleParoSupport = 0;
+  let bundleDiscount = 0;
+  let bundleSupport = 0;
+
+  for(const u of units){
+    grossCost += u.p.pp;
+    grossSales += u.p.sales;
+
+    if(!used.has(u.unitId)){
+      singleParoDiscount += u.p.paroDiscount || 0;
+      singleParoSupport += u.p.paroSupport || 0;
+    }
+  }
+
+  for(const app of best.chosen){
+    bundleDiscount += app.discount;
+    bundleSupport += app.support;
+  }
+
+  const costSupport = singleParoSupport + bundleSupport;
+  const netCost = grossCost - costSupport;
+  const netSales = grossSales - singleParoDiscount - bundleDiscount;
+
+  return {
+    units,
+    apps: best.chosen,
+    used,
+    grossCost,
+    grossSales,
+    singleParoDiscount,
+    singleParoSupport,
+    bundleDiscount,
+    bundleSupport,
+    costSupport,
+    netCost,
+    netSales
+  };
+}
+
+function groupedRows(calc){
+  const groups = [];
+  const usedUnitIds = new Set();
+
+  for(const app of calc.apps){
+    groups.push({
+      type: "set",
+      app,
+      units: app.units
+    });
+
+    for(const u of app.units){
+      usedUnitIds.add(u.unitId);
+    }
+  }
+
+  const singles = calc.units.filter(u => !usedUnitIds.has(u.unitId));
+
+  if(singles.length){
+    groups.push({
+      type: "single",
+      units: singles
+    });
+  }
+
+  return groups;
+}
+
+function rowHtml(unit, isSet){
+  const p = unit.p;
+
+  const singleDiscounted = Math.max(0, p.sales - (p.paroDiscount || 0));
+  const rowTotal = isSet ? p.sales : singleDiscounted;
+
+  const status = isSet
+    ? '<span class="badge badgeSet">Bu setin parçası</span>'
+    : '<span class="badge">Tekli</span>';
+
+  return `
+    <tr class="${isSet ? "setRow" : ""}">
+      <td>
+        <b>${escapeHtml(p.name)}</b>
+        <div class="muted">${escapeHtml(p.code)} • ${escapeHtml(p.group || "-")}</div>
+      </td>
+      <td>${money(p.pp)}</td>
+      <td>${money(p.sales)}</td>
+      <td class="disc">${negMoney(p.paroDiscount)}</td>
+      <td class="support">${negMoney(p.paroSupport)}</td>
+      <td class="net">${money(singleDiscounted)}</td>
+      <td>${status}</td>
+      <td>
+        <div class="qty">
+          <button onclick="changeQty('${p.id}',-1)">−</button>
+          <b>1</b>
+          <button onclick="changeQty('${p.id}',1)">+</button>
+        </div>
+      </td>
+      <td><b>${money(rowTotal)}</b></td>
+      <td><button class="red" onclick="removeUnit('${unit.unitId}')">Sil</button></td>
+    </tr>
+  `;
+}
+
+function renderCart(){
+  const body = $("cartBody");
+  const calc = calculate();
+  latestCalc = calc;
+
+  const groups = groupedRows(calc);
+
+  if(!cart.length){
+    body.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#64748b;padding:24px">Henüz ürün eklenmedi.</td></tr>`;
+    renderSummary(calc);
+    renderCampaignDetails(calc);
+    return;
+  }
+
+  let html = "";
+
+  for(const g of groups){
+    if(g.type === "set"){
+      html += `
+        <tr class="setHead">
+          <td colspan="6">🎯 Set kampanya: ${escapeHtml(g.app.name)}</td>
+          <td colspan="4" style="text-align:right">
+            Satış indirimi: ${negMoney(g.app.discount)} / Maliyet destek: ${negMoney(g.app.support)}
+          </td>
+        </tr>
+      `;
+
+      for(const u of g.units){
+        html += rowHtml(u, true);
+      }
+
+    }else{
+      html += `
+        <tr class="singleHead">
+          <td colspan="6">Tekli ürünler / sete girmeyenler</td>
+          <td colspan="4" style="text-align:right">Bu ürünler kombin kampanyaya bağlanmadı</td>
+        </tr>
+      `;
+
+      for(const u of g.units){
+        html += rowHtml(u, false);
+      }
+    }
+  }
+
+  body.innerHTML = html;
+
+  renderSummary(calc);
+  renderCampaignDetails(calc);
+}
+
+function renderSummary(calc){
+  $("grossCost").textContent = money(calc.grossCost);
+  $("costSupport").textContent = negMoney(calc.costSupport);
+  $("netCost").textContent = money(calc.netCost);
+
+  $("grossSales").textContent = money(calc.grossSales);
+  $("singleParoDiscount").textContent = negMoney(calc.singleParoDiscount);
+  $("bundleDiscount").textContent = negMoney(calc.bundleDiscount);
+  $("netSales").textContent = money(calc.netSales);
+
+  renderInstallment();
+}
+
+function renderInstallment(){
+  const calc = latestCalc || calculate();
+  const base = calc.netCost || 0;
+
+  const lowCash = base * 1.04;
+  const highCash = base * 1.065;
+
+  const lowRows = [
+    ["Nakit", lowCash],
+    ["3 Taksit", lowCash * 1.06],
+    ["5 Taksit", lowCash / (1 - 0.10)],
+    ["7 Taksit", lowCash / (1 - (lowCash > 70000 ? 0.12 : 0.17))],
+    ["9 Taksit", lowCash / (1 - (lowCash > 70000 ? 0.15 : 0.21))]
+  ];
+
+  const highRows = [
+    ["Nakit", highCash],
+    ["3 Taksit", highCash * 1.065],
+    ["5 Taksit", highCash / (1 - 0.10)],
+    ["7 Taksit", highCash / (1 - (highCash > 70000 ? 0.12 : 0.17))],
+    ["9 Taksit", highCash / (1 - (highCash > 70000 ? 0.15 : 0.21))]
+  ];
+
+  $("payTable3").innerHTML = lowRows.map(r => `
+    <tr>
+      <td>${r[0]}</td>
+      <td>${money(r[1])}</td>
+    </tr>
+  `).join("");
+
+  $("payTable5").innerHTML = highRows.map(r => `
+    <tr>
+      <td>${r[0]}</td>
+      <td>${money(r[1])}</td>
+    </tr>
+  `).join("");
+}
+
+function renderCampaignDetails(calc){
+  const box = $("campaignDetails");
+
+  if(!calc.apps.length){
+    box.innerHTML = "";
+    return;
+  }
+
+  let totalSetGrossCost = 0;
+  let totalSetSupport = 0;
+  let totalSetNetCost = 0;
+  let totalSetGrossSales = 0;
+  let totalSetDiscount = 0;
+  let totalSetNetSales = 0;
+
+  let html = `<div class="campBox"><div class="campTitle">Uygulanan Kombin Kampanyalar</div>`;
+
+  for(const app of calc.apps){
+    const grossCost = app.units.reduce((s,u) => s + u.p.pp, 0);
+    const grossSales = app.units.reduce((s,u) => s + u.p.sales, 0);
+    const netCost = grossCost - app.support;
+    const netSales = grossSales - app.discount;
+
+    totalSetGrossCost += grossCost;
+    totalSetSupport += app.support;
+    totalSetNetCost += netCost;
+    totalSetGrossSales += grossSales;
+    totalSetDiscount += app.discount;
+    totalSetNetSales += netSales;
+
+    html += `
+      <div class="campItem">
+        <b>${escapeHtml(app.name)}</b>
+        <div class="small">Bu setteki ürünler:</div>
+        <ul style="margin:6px 0 8px">
+          ${app.units.map(u => `<li>${escapeHtml(u.p.name)} <span class="small">(${escapeHtml(u.p.code)})</span></li>`).join("")}
+        </ul>
+
+        <div class="summaryLine"><span>Set Brüt Alış / PP:</span><b>${money(grossCost)}</b></div>
+        <div class="summaryLine support"><span>Set Maliyet Destek:</span><b>${negMoney(app.support)}</b></div>
+        <div class="summaryLine"><span>Set Net Alış:</span><b>${money(netCost)}</b></div>
+        <div class="summaryLine"><span>Set İndirimsiz Satış:</span><b>${money(grossSales)}</b></div>
+        <div class="summaryLine disc"><span>Set Satış İndirimi:</span><b>${negMoney(app.discount)}</b></div>
+        <div class="summaryLine net"><span>Set İndirimli Satış:</span><b>${money(netSales)}</b></div>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="hr"></div>
+    <div class="summaryLine"><span>Toplam Set Brüt Alış:</span><b>${money(totalSetGrossCost)}</b></div>
+    <div class="summaryLine support"><span>Toplam Set Maliyet Destek:</span><b>${negMoney(totalSetSupport)}</b></div>
+    <div class="summaryLine"><span>Toplam Set Net Alış:</span><b>${money(totalSetNetCost)}</b></div>
+    <div class="summaryLine"><span>Toplam Set İndirimsiz Satış:</span><b>${money(totalSetGrossSales)}</b></div>
+    <div class="summaryLine disc"><span>Toplam Set Satış İndirimi:</span><b>${negMoney(totalSetDiscount)}</b></div>
+    <div class="summaryLine net"><span>Toplam Set İndirimli Satış:</span><b>${money(totalSetNetSales)}</b></div>
+  `;
+
+  html += `</div>`;
+  box.innerHTML = html;
+}
+
+function renderSearch(){
+  const q = norm($("search").value);
+  const results = $("results");
+
+  if(!q){
+    results.innerHTML = "";
+    return;
+  }
+
+  const terms = q.split(" ").filter(Boolean);
+
+  const found = products.filter(p => {
+    const t = productText(p);
+    return terms.every(term => t.includes(term));
+  }).slice(0, 25);
+
+  if(!found.length){
+    results.innerHTML = `<div class="muted">Ürün bulunamadı.</div>`;
+    return;
+  }
+
+  results.innerHTML = found.map(p => {
+    const added = isAdded(p.id);
+
+    return `
+      <div class="result ${added ? "added" : ""}">
+        <div>
+          <div class="rtitle">${escapeHtml(p.name)} <span class="muted">(${escapeHtml(p.code)})</span></div>
+          <div class="muted">${escapeHtml(p.group || "-")} • ${escapeHtml(p.brand || "-")}</div>
+          <div class="priceLine">
+            Alış: ${money(p.pp)}
+            ${p.paroSupport ? `<span class="support">&nbsp; Tekil Destek: ${negMoney(p.paroSupport)}</span>` : ""}
+            &nbsp; Satış: ${money(p.sales)}
+            ${p.paroDiscount ? `<span class="disc">&nbsp; Tekil Paro: ${negMoney(p.paroDiscount)}</span>` : ""}
+          </div>
+        </div>
+        <button onclick="addProduct('${p.id}')">${added ? "Tekrar Ekle" : "Ekle"}</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderAll(){
+  renderSearch();
+  renderCart();
+}
+
+function escapeHtml(v){
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+$("search").addEventListener("input", renderSearch);
+
+loadExcel();
+</script>
+</body>
+</html>
