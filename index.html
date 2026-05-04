@@ -61,12 +61,13 @@
     .small{font-size:12px;color:#33506f}
     .hr{border-top:1px solid #aaa;margin:10px 0}
 
-    .payGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:14px}
+    .payGrid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:18px;margin-top:14px}
     .payBox{border:1px solid #d8e1ed;border-radius:14px;padding:14px;background:#ffffff;box-shadow:0 4px 14px #0000000d}
     .payBox h3{margin:0 0 12px;padding:10px 12px;border-radius:10px;color:#000;font-size:20px;text-align:center}
     .payBox.low h3{background:#f00000;color:white}
     .payBox.high h3{background:#fff200;color:#000}
     .payBox.custom h3{background:#0f3460;color:white}
+    .payBox.list h3{background:#16a085;color:white}
     .customAmountWrap{display:flex;gap:8px;align-items:center;margin-bottom:10px;background:#f8fbff;border:1px solid #d8e1ed;border-radius:10px;padding:8px}
     .customAmountWrap input{padding:9px 10px!important;font-size:15px!important;border:2px solid #e8ecf0!important;border-radius:8px!important}
     .customAmountWrap label{font-size:12px;color:#33506f;white-space:nowrap}
@@ -274,6 +275,10 @@
         <input type="radio" name="karOrani" id="karCustom" value="custom" style="width:16px;height:16px;accent-color:#0f3460">
         Özel Tutar
       </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:600;color:#0b6b5b">
+        <input type="radio" name="karOrani" id="karList" value="list" style="width:16px;height:16px;accent-color:#16a085">
+        Liste Fiyatı
+      </label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">
         <button onclick="saveTeklif()" style="background:#0f3460;font-size:13px;padding:7px 14px">💾 Kaydet</button>
         <button onclick="whatsappTeklif()" style="background:#25D366;font-size:13px;padding:7px 14px">📲 WhatsApp</button>
@@ -360,6 +365,13 @@
         </div>
         <table class="payTable">
           <tbody id="payTableCustom"></tbody>
+        </table>
+      </div>
+
+      <div class="payBox list">
+        <h3>LİSTE FİYATI</h3>
+        <table class="payTable">
+          <tbody id="payTableList"></tbody>
         </table>
       </div>
     </div>
@@ -482,6 +494,7 @@ let latestCalc = null;
 let latestPay3 = [];
 let latestPay5 = [];
 let latestPayCustom = [];
+let latestPayList = [];
 let currentComplementProductId = null;
 
 const $ = id => document.getElementById(id);
@@ -1267,6 +1280,23 @@ function buildPaymentRowsFromCash(cash, mode){
   ];
 }
 
+function buildPaymentRowsFromFiveInstallment(fiveInstallmentPrice){
+  const five = num(fiveInstallmentPrice);
+  if(!five || five <= 0) return [];
+
+  // Liste fiyatı mantığı: 5 taksit = Arçelik İndirimli Satış Fiyatı.
+  // Mevcut formülde 5 taksit, nakit fiyatın %10 fark eklenmiş halidir.
+  const cash = five * (1 - 0.10);
+
+  return [
+    ["Nakit", cash],
+    ["3 Taksit", cash * 1.06],
+    ["5 Taksit", five],
+    ["7 Taksit", cash / (1 - (cash > 70000 ? 0.12 : 0.17))],
+    ["9 Taksit", cash / (1 - (cash > 70000 ? 0.15 : 0.21))]
+  ];
+}
+
 function handleCustomAmountInput(){
   const el = $("karCustom");
   if(el) el.checked = true;
@@ -1284,10 +1314,12 @@ function renderInstallment(){
   const highRows = buildPaymentRowsFromCash(highCash, "high");
   const customCash = parseMoneyInput($("customCashAmount") ? $("customCashAmount").value : "");
   const customRows = buildPaymentRowsFromCash(customCash, "low");
+  const listRows = buildPaymentRowsFromFiveInstallment(calc.netSales || 0);
 
   latestPay3 = lowRows.map(r => ({ label: r[0], price: r[1] }));
   latestPay5 = highRows.map(r => ({ label: r[0], price: r[1] }));
   latestPayCustom = customRows.map(r => ({ label: r[0], price: r[1] }));
+  latestPayList = listRows.map(r => ({ label: r[0], price: r[1] }));
 
   $("payTable3").innerHTML = lowRows.map(r => `
     <tr>
@@ -1309,6 +1341,13 @@ function renderInstallment(){
       <td>${money(r[1])}</td>
     </tr>
   `).join("") : `<tr><td colspan="2" style="text-align:center;color:#64748b;background:#f8fbff">Nakit tutar girin</td></tr>`;
+
+  $("payTableList").innerHTML = listRows.length ? listRows.map(r => `
+    <tr>
+      <td>${r[0]}</td>
+      <td>${money(r[1])}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="2" style="text-align:center;color:#64748b;background:#f8fbff">Ürün eklenince hesaplanır</td></tr>`;
 }
 
 function renderCampaignDetails(calc){
@@ -1454,7 +1493,7 @@ window.addProduct = function(productId){
 function getKarYuzde(){
   const el = document.querySelector('input[name="karOrani"]:checked');
   if(!el) return 3;
-  return el.value === "custom" ? "custom" : parseInt(el.value);
+  return (el.value === "custom" || el.value === "list") ? el.value : parseInt(el.value);
 }
 
 function buildTeklifMsg(karYuzde){
@@ -1479,7 +1518,7 @@ function buildTeklifMsg(karYuzde){
   msg += "💎 *Mağazamıza Özel İndirimli Fiyat*\n";
 
   if(karYuzde !== null && calc){
-    const tablo = karYuzde === "custom" ? latestPayCustom : (karYuzde === 3 ? latestPay3 : latestPay5);
+    const tablo = karYuzde === "custom" ? latestPayCustom : (karYuzde === "list" ? latestPayList : (karYuzde === 3 ? latestPay3 : latestPay5));
     if(karYuzde === "custom" && (!tablo || !tablo.length)){
       alert("Özel tutarlı teklif için Nakit Tutar alanını doldurun.");
       return "";
@@ -1516,7 +1555,7 @@ function printTeklif(){
   const tarih = $("offerDate").value.trim();
   const logoSrc = document.querySelector(".header-logo") ? document.querySelector(".header-logo").src : "";
   const karYuzde = getKarYuzde();
-  const tablo = karYuzde === "custom" ? latestPayCustom : (karYuzde === 3 ? latestPay3 : latestPay5);
+  const tablo = karYuzde === "custom" ? latestPayCustom : (karYuzde === "list" ? latestPayList : (karYuzde === 3 ? latestPay3 : latestPay5));
   if(karYuzde === "custom" && (!tablo || !tablo.length)){
     alert("Özel tutarlı teklif için Nakit Tutar alanını doldurun.");
     return;
@@ -1605,6 +1644,7 @@ function saveTeklif(){
     pay3: latestPay3 || [],
     pay5: latestPay5 || [],
     payCustom: latestPayCustom || [],
+    payList: latestPayList || [],
     customCashAmount: $("customCashAmount") ? $("customCashAmount").value.trim() : ""
   };
 
