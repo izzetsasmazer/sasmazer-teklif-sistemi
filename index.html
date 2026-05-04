@@ -1357,12 +1357,7 @@ function buildTeklifMsg(karYuzde){
     msg += "▪️ " + item.name + "  " + money(item.sales) + (item.qty > 1 ? " x" + item.qty : "") + "\n";
   }
 
-  if(calc && calc.apps && calc.apps.length){
-    msg += "\n🎁 *Kampanya:* " + calc.apps.map(a => a.name).join(" + ") + "\n";
-    msg += "   Satış indirimi: " + money(calc.bundleDiscount) + "\n";
-  }
-
-  msg += "\n💰 *İndirimli Satış: " + money(calc ? calc.netSales : 0) + "*\n";
+  msg += "\n💰 *Mağazamıza Özel İndirimli Fiyat: " + money(calc ? calc.netSales : 0) + "*\n";
 
   if(karYuzde !== null && calc){
     const tablo = karYuzde === 3 ? latestPay3 : latestPay5;
