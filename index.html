@@ -61,11 +61,15 @@
     .small{font-size:12px;color:#33506f}
     .hr{border-top:1px solid #aaa;margin:10px 0}
 
-    .payGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}
+    .payGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:14px}
     .payBox{border:1px solid #d8e1ed;border-radius:14px;padding:14px;background:#ffffff;box-shadow:0 4px 14px #0000000d}
     .payBox h3{margin:0 0 12px;padding:10px 12px;border-radius:10px;color:#000;font-size:20px;text-align:center}
     .payBox.low h3{background:#f00000;color:white}
     .payBox.high h3{background:#fff200;color:#000}
+    .payBox.custom h3{background:#0f3460;color:white}
+    .customAmountWrap{display:flex;gap:8px;align-items:center;margin-bottom:10px;background:#f8fbff;border:1px solid #d8e1ed;border-radius:10px;padding:8px}
+    .customAmountWrap input{padding:9px 10px!important;font-size:15px!important;border:2px solid #e8ecf0!important;border-radius:8px!important}
+    .customAmountWrap label{font-size:12px;color:#33506f;white-space:nowrap}
     .payTable{width:100%;border-collapse:separate;border-spacing:0 6px}
     .payTable tr{overflow:hidden}
     .payTable td{padding:12px 14px;font-size:17px;border:0}
@@ -230,6 +234,10 @@
         <input type="radio" name="karOrani" id="kar5" value="5" style="width:16px;height:16px;accent-color:#e8a000">
         Kar %5
       </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:600;color:#0f3460">
+        <input type="radio" name="karOrani" id="karCustom" value="custom" style="width:16px;height:16px;accent-color:#0f3460">
+        Özel Tutar
+      </label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">
         <button onclick="saveTeklif()" style="background:#0f3460;font-size:13px;padding:7px 14px">💾 Kaydet</button>
         <button onclick="whatsappTeklif()" style="background:#25D366;font-size:13px;padding:7px 14px">📲 WhatsApp</button>
@@ -305,6 +313,17 @@
         <h3>KAR %5</h3>
         <table class="payTable">
           <tbody id="payTable5"></tbody>
+        </table>
+      </div>
+
+      <div class="payBox custom">
+        <h3>ÖZEL TUTAR</h3>
+        <div class="customAmountWrap">
+          <label for="customCashAmount">Nakit Tutar</label>
+          <input type="text" id="customCashAmount" placeholder="Örn: 145.000" inputmode="numeric" oninput="handleCustomAmountInput()">
+        </div>
+        <table class="payTable">
+          <tbody id="payTableCustom"></tbody>
         </table>
       </div>
     </div>
@@ -391,6 +410,7 @@ let cart = [];
 let latestCalc = null;
 let latestPay3 = [];
 let latestPay5 = [];
+let latestPayCustom = [];
 let currentComplementProductId = null;
 
 const $ = id => document.getElementById(id);
@@ -1158,6 +1178,30 @@ function renderSummary(calc){
   renderInstallment();
 }
 
+function parseMoneyInput(v){
+  return num(v);
+}
+
+function buildPaymentRowsFromCash(cash, mode){
+  if(!cash || cash <= 0) return [];
+
+  const threeRate = mode === "high" ? 1.065 : 1.06;
+
+  return [
+    ["Nakit", cash],
+    ["3 Taksit", cash * threeRate],
+    ["5 Taksit", cash / (1 - 0.10)],
+    ["7 Taksit", cash / (1 - (cash > 70000 ? 0.12 : 0.17))],
+    ["9 Taksit", cash / (1 - (cash > 70000 ? 0.15 : 0.21))]
+  ];
+}
+
+function handleCustomAmountInput(){
+  const el = $("karCustom");
+  if(el) el.checked = true;
+  renderInstallment();
+}
+
 function renderInstallment(){
   const calc = latestCalc || calculate();
   const base = calc.netCost || 0;
@@ -1165,24 +1209,14 @@ function renderInstallment(){
   const lowCash = base * 1.04;
   const highCash = base * 1.065;
 
-  const lowRows = [
-    ["Nakit", lowCash],
-    ["3 Taksit", lowCash * 1.06],
-    ["5 Taksit", lowCash / (1 - 0.10)],
-    ["7 Taksit", lowCash / (1 - (lowCash > 70000 ? 0.12 : 0.17))],
-    ["9 Taksit", lowCash / (1 - (lowCash > 70000 ? 0.15 : 0.21))]
-  ];
-
-  const highRows = [
-    ["Nakit", highCash],
-    ["3 Taksit", highCash * 1.065],
-    ["5 Taksit", highCash / (1 - 0.10)],
-    ["7 Taksit", highCash / (1 - (highCash > 70000 ? 0.12 : 0.17))],
-    ["9 Taksit", highCash / (1 - (highCash > 70000 ? 0.15 : 0.21))]
-  ];
+  const lowRows = buildPaymentRowsFromCash(lowCash, "low");
+  const highRows = buildPaymentRowsFromCash(highCash, "high");
+  const customCash = parseMoneyInput($("customCashAmount") ? $("customCashAmount").value : "");
+  const customRows = buildPaymentRowsFromCash(customCash, "low");
 
   latestPay3 = lowRows.map(r => ({ label: r[0], price: r[1] }));
   latestPay5 = highRows.map(r => ({ label: r[0], price: r[1] }));
+  latestPayCustom = customRows.map(r => ({ label: r[0], price: r[1] }));
 
   $("payTable3").innerHTML = lowRows.map(r => `
     <tr>
@@ -1197,6 +1231,13 @@ function renderInstallment(){
       <td>${money(r[1])}</td>
     </tr>
   `).join("");
+
+  $("payTableCustom").innerHTML = customRows.length ? customRows.map(r => `
+    <tr>
+      <td>${r[0]}</td>
+      <td>${money(r[1])}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="2" style="text-align:center;color:#64748b;background:#f8fbff">Nakit tutar girin</td></tr>`;
 }
 
 function renderCampaignDetails(calc){
@@ -1321,6 +1362,7 @@ function escapeHtml(v){
 }
 
 $("search").addEventListener("input", renderSearch);
+document.querySelectorAll('input[name="karOrani"]').forEach(el => el.addEventListener("change", renderInstallment));
 
 // Tarih otomatik doldur
 (function(){
@@ -1340,7 +1382,8 @@ window.addProduct = function(productId){
 // ── WhatsApp ──────────────────────────────────────────────
 function getKarYuzde(){
   const el = document.querySelector('input[name="karOrani"]:checked');
-  return el ? parseInt(el.value) : 3;
+  if(!el) return 3;
+  return el.value === "custom" ? "custom" : parseInt(el.value);
 }
 
 function buildTeklifMsg(karYuzde){
@@ -1365,7 +1408,11 @@ function buildTeklifMsg(karYuzde){
   msg += "💎 *Mağazamıza Özel İndirimli Fiyat*\n";
 
   if(karYuzde !== null && calc){
-    const tablo = karYuzde === 3 ? latestPay3 : latestPay5;
+    const tablo = karYuzde === "custom" ? latestPayCustom : (karYuzde === 3 ? latestPay3 : latestPay5);
+    if(karYuzde === "custom" && (!tablo || !tablo.length)){
+      alert("Özel tutarlı teklif için Nakit Tutar alanını doldurun.");
+      return "";
+    }
     if(tablo && tablo.length){
       msg += "💳 *Ödeme Seçenekleri*\n";
       for(const row of tablo){
@@ -1383,6 +1430,7 @@ function whatsappTeklif(){
   const karYuzde = getKarYuzde();
   const phone = $("customerPhone").value.trim().replace(/\D/g,"");
   const msg = buildTeklifMsg(karYuzde);
+  if(!msg) return;
   const waNum = phone.startsWith("0") ? "90" + phone.slice(1) : (phone.startsWith("90") ? phone : "90" + phone);
   const url = phone ? "https://wa.me/" + waNum + "?text=" + encodeURIComponent(msg)
                     : "https://wa.me/?text=" + encodeURIComponent(msg);
@@ -1397,7 +1445,11 @@ function printTeklif(){
   const tarih = $("offerDate").value.trim();
   const logoSrc = document.querySelector(".header-logo") ? document.querySelector(".header-logo").src : "";
   const karYuzde = getKarYuzde();
-  const tablo = karYuzde === 3 ? latestPay3 : latestPay5;
+  const tablo = karYuzde === "custom" ? latestPayCustom : (karYuzde === 3 ? latestPay3 : latestPay5);
+  if(karYuzde === "custom" && (!tablo || !tablo.length)){
+    alert("Özel tutarlı teklif için Nakit Tutar alanını doldurun.");
+    return;
+  }
 
   // Ürün satırları — sadece satış fiyatı + paro destek
   let rows = cart.map(item => {
@@ -1480,7 +1532,9 @@ function saveTeklif(){
     kampanyalar: (calc && calc.apps) ? calc.apps.map(a => a.name) : [],
     seciliKar: karYuzde,
     pay3: latestPay3 || [],
-    pay5: latestPay5 || []
+    pay5: latestPay5 || [],
+    payCustom: latestPayCustom || [],
+    customCashAmount: $("customCashAmount") ? $("customCashAmount").value.trim() : ""
   };
 
   const list = JSON.parse(localStorage.getItem("teklifler") || "[]");
