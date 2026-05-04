@@ -77,11 +77,37 @@
     .payTable tr:nth-child(4) td{background:#f7c6a7}
     .payTable tr:nth-child(5) td{background:#b9d99d}
 
+    .giftHint{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:3px 7px;border-radius:999px;background:#fff1ba;color:#946000;font-size:12px;font-weight:800;border:1px solid #f3d27a;vertical-align:middle}
+    .giftHint button{background:transparent;color:#946000;border:0;padding:0;font-size:12px;cursor:pointer;font-weight:800}
+    .compBtn{background:#fff7d6;color:#7a4200;border:1px solid #f0ca68;border-radius:999px;padding:6px 10px;font-size:12px;white-space:nowrap}
+    .compBtn:hover{background:#ffeaa0}
+    .compOverlay{position:fixed;inset:0;background:rgba(7,20,38,.42);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+    .compOverlay.visible{display:flex}
+    .compModal{width:min(760px,100%);max-height:82vh;overflow:auto;background:white;border-radius:18px;box-shadow:0 20px 60px #0004;border:1px solid #e8ecf0}
+    .compHead{position:sticky;top:0;background:white;border-bottom:1px solid #edf0f5;padding:14px 16px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;z-index:1}
+    .compHead h3{margin:0;font-size:18px;color:#071426}
+    .compHead .small{margin-top:3px}
+    .compClose{background:#eef2f7!important;color:#101828!important;padding:7px 11px!important}
+    .compSearchWrap{padding:10px 16px 12px;background:white;border-bottom:1px solid #edf0f5;position:sticky;top:70px;z-index:1}
+    .compSearch{width:100%;box-sizing:border-box;padding:11px 13px;border:2px solid #e8ecf0;border-radius:10px;font-size:14px}
+    .compSearch:focus{outline:none;border-color:#0f3460}
+    .compCount{font-size:12px;color:#33506f;margin-top:6px}
+    .compBody{padding:14px 16px}
+    .compCampaign{border:1px solid #f3d27a;background:#fffaf0;border-radius:14px;margin-bottom:12px;overflow:hidden}
+    .compCampaignTitle{padding:10px 12px;background:#fff1ba;color:#7a4200;font-weight:800;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .compProduct{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;border-top:1px solid #f5e1a5;background:white}
+    .compProduct.added{background:#f2f9f5}
+    .compProductName{font-weight:800}
+    .compProduct button{background:#0f3460;white-space:nowrap}
+    .compEmpty{padding:22px;text-align:center;color:#64748b;background:#f8fbff;border-radius:12px}
+
     @media(max-width:900px){
       .grid{grid-template-columns:1fr}
       .payGrid{grid-template-columns:1fr}
       .result{display:block}
       .result button{width:100%;margin-top:8px}
+      .compProduct{display:block}
+      .compProduct button{width:100%;margin-top:8px}
       th,td{font-size:12px;padding:8px}
       th:nth-child(2),td:nth-child(2){display:none}
       th:nth-child(5),td:nth-child(5){display:none}
@@ -287,6 +313,24 @@
   <div id="campaignDetails"></div>
 
 
+  <div id="compOverlay" class="compOverlay" onclick="closeComplements(event)">
+    <div class="compModal" onclick="event.stopPropagation()">
+      <div class="compHead">
+        <div>
+          <h3 id="compTitle">Tamamlayıcı ürünler</h3>
+          <div id="compSub" class="small"></div>
+        </div>
+        <button class="compClose" onclick="closeComplements()">Kapat</button>
+      </div>
+      <div class="compSearchWrap">
+        <input type="text" id="compSearch" class="compSearch" placeholder="Bu listede ara: ürün adı, kod, grup..." autocomplete="off" oninput="renderComplements()" />
+        <div id="compCount" class="compCount"></div>
+      </div>
+      <div id="compBody" class="compBody"></div>
+    </div>
+  </div>
+
+
 </main>
 
 <script>
@@ -347,6 +391,7 @@ let cart = [];
 let latestCalc = null;
 let latestPay3 = [];
 let latestPay5 = [];
+let currentComplementProductId = null;
 
 const $ = id => document.getElementById(id);
 
@@ -866,6 +911,154 @@ function groupedRows(calc){
   return groups;
 }
 
+
+function ruleMatchesProductSide(p, r, side){
+  if(side === "left"){
+    return codeInSet(p, r.leftCodes) || nameInList(p, r.leftNames);
+  }
+  return codeInSet(p, r.rightCodes) || nameInList(p, r.rightNames);
+}
+
+function candidatesForSide(r, side){
+  const codeSet = side === "left" ? r.leftCodes : r.rightCodes;
+  const nameList = side === "left" ? r.leftNames : r.rightNames;
+  const byCode = products.filter(p => codeInSet(p, codeSet));
+  const byName = products.filter(p => nameInList(p, nameList));
+  const map = new Map();
+
+  for(const p of [...byCode, ...byName]){
+    if(p && p.code) map.set(p.id, p);
+  }
+
+  return [...map.values()].sort((a,b) => a.name.localeCompare(b.name, "tr"));
+}
+
+function getComplementCampaigns(productId){
+  const p = products.find(x => x.id === productId) || cart.find(x => x.id === productId);
+  if(!p) return [];
+
+  const campaigns = [];
+
+  for(const r of bundleRules){
+    if(UCLU_ANK_RULES.has(r.ruleId)) continue;
+
+    const leftMatch = ruleMatchesProductSide(p, r, "left");
+    const rightMatch = ruleMatchesProductSide(p, r, "right");
+
+    if(leftMatch && r.rightCodes.size){
+      const items = candidatesForSide(r, "right").filter(x => x.id !== p.id);
+      if(items.length){
+        campaigns.push({ rule:r, direction:"right", items });
+      }
+    }
+
+    if(rightMatch){
+      const items = candidatesForSide(r, "left").filter(x => x.id !== p.id);
+      if(items.length){
+        campaigns.push({ rule:r, direction:"left", items });
+      }
+    }
+  }
+
+  return campaigns;
+}
+
+function hasComplementProducts(productId){
+  return getComplementCampaigns(productId).some(c => c.items && c.items.length);
+}
+
+function complementGiftHtml(productId){
+  if(!hasComplementProducts(productId)) return "";
+  return `<span class="giftHint" title="Bu ürünle set kampanyası yapılabilir"><button onclick="showComplements('${productId}')">🎁 Set var</button></span>`;
+}
+
+function showComplements(productId){
+  const p = products.find(x => x.id === productId) || cart.find(x => x.id === productId);
+  if(!p) return;
+
+  currentComplementProductId = productId;
+  $("compTitle").textContent = "🎁 " + p.name + " için tamamlayıcı ürünler";
+  $("compSub").textContent = "Listeden ürün seçerseniz sepete eklenir ve kampanya hesabı otomatik yenilenir.";
+  if($("compSearch")) $("compSearch").value = "";
+
+  renderComplements();
+  $("compOverlay").classList.add("visible");
+  setTimeout(() => $("compSearch") && $("compSearch").focus(), 80);
+}
+
+function renderComplements(){
+  const productId = currentComplementProductId;
+  const p = products.find(x => x.id === productId) || cart.find(x => x.id === productId);
+  if(!p) return;
+
+  const campaigns = getComplementCampaigns(productId);
+  const q = norm($("compSearch") ? $("compSearch").value : "");
+
+  function itemMatches(item){
+    if(!q) return true;
+    const t = norm([item.name, item.code, item.group, item.brand].join(" "));
+    return t.includes(q);
+  }
+
+  const filteredCampaigns = campaigns
+    .map(c => ({...c, items: c.items.filter(itemMatches)}))
+    .filter(c => c.items.length);
+
+  const totalCount = campaigns.reduce((sum,c) => sum + c.items.length, 0);
+  const filteredCount = filteredCampaigns.reduce((sum,c) => sum + c.items.length, 0);
+
+  if($("compCount")){
+    $("compCount").textContent = q
+      ? filteredCount + " ürün gösteriliyor / toplam " + totalCount + " tamamlayıcı ürün"
+      : totalCount + " tamamlayıcı ürün listeleniyor";
+  }
+
+  if(!campaigns.length){
+    $("compBody").innerHTML = `<div class="compEmpty">Bu ürün için Excel kod listesinde tamamlayıcı ürün bulunamadı.</div>`;
+  }else if(!filteredCampaigns.length){
+    $("compBody").innerHTML = `<div class="compEmpty">Aradığınız kelimeye uygun tamamlayıcı ürün bulunamadı.</div>`;
+  }else{
+    $("compBody").innerHTML = filteredCampaigns.map(c => {
+      const items = c.items.slice(0, 150);
+      return `
+        <div class="compCampaign">
+          <div class="compCampaignTitle">
+            <span>${escapeHtml(c.rule.name || "Set kampanyası")}</span>
+            <span>İndirim: ${negMoney(c.rule.saleDiscount)} / Destek: ${negMoney(c.rule.support)}</span>
+          </div>
+          ${items.map(item => {
+            const added = isAdded(item.id);
+            return `
+              <div class="compProduct ${added ? "added" : ""}">
+                <div>
+                  <div class="compProductName">${escapeHtml(item.name)} <span class="muted">(${escapeHtml(item.code)})</span></div>
+                  <div class="muted">${escapeHtml(item.group || "-")} • Satış: ${money(item.sales)}${item.paroDiscount ? " • Tekil Paro: " + negMoney(item.paroDiscount) : ""}</div>
+                </div>
+                <button onclick="addComplementProduct('${item.id}')" ${added ? "disabled" : ""}>${added ? "Sepette" : "Sepete Ekle"}</button>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+function addComplementProduct(productId){
+  window.addProduct(productId);
+  renderComplements();
+}
+
+function closeComplements(event){
+  if(event && event.target && event.target.id !== "compOverlay") return;
+  $("compOverlay").classList.remove("visible");
+  currentComplementProductId = null;
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape") closeComplements();
+});
+
 function rowHtml(unit, isSet){
   const p = unit.p;
 
@@ -879,7 +1072,7 @@ function rowHtml(unit, isSet){
   return `
     <tr class="${isSet ? "setRow" : ""}">
       <td>
-        <b>${escapeHtml(p.name)}</b>
+        <b>${escapeHtml(p.name)}</b>${complementGiftHtml(p.id)}
         <div class="muted">${escapeHtml(p.code)} • ${escapeHtml(p.group || "-")}</div>
       </td>
       <td>${money(p.pp)}</td>
@@ -896,7 +1089,7 @@ function rowHtml(unit, isSet){
         </div>
       </td>
       <td><b>${money(rowTotal)}</b></td>
-      <td><button class="red" onclick="removeProduct('${p.id}')">Sil</button></td>
+      <td style="display:flex;gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap"><button class="red" onclick="removeProduct('${p.id}')">Sil</button></td>
     </tr>
   `;
 }
@@ -1098,7 +1291,7 @@ function renderSearch(){
     return `
       <div class="result ${added ? "added" : ""}">
         <div>
-          <div class="rtitle">${escapeHtml(p.name)} <span class="muted">(${escapeHtml(p.code)})</span></div>
+          <div class="rtitle">${escapeHtml(p.name)} <span class="muted">(${escapeHtml(p.code)})</span>${complementGiftHtml(p.id)}</div>
           <div class="muted">${escapeHtml(p.group || "-")} • ${escapeHtml(p.brand || "-")}</div>
           <div class="priceLine">
             Alış: ${money(p.pp)}
