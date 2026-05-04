@@ -1357,12 +1357,17 @@ function buildTeklifMsg(karYuzde){
     msg += "▪️ " + item.name + "  " + money(item.sales) + (item.qty > 1 ? " x" + item.qty : "") + "\n";
   }
 
-  msg += "\n💰 *Mağazamıza Özel İndirimli Fiyat: " + money(calc ? calc.netSales : 0) + "*\n";
+  const arcelikSatisFiyati = calc ? calc.grossSales : cart.reduce((toplam, item) => toplam + (item.sales * item.qty), 0);
+  const arcelikIndirimliSatisFiyati = calc ? calc.netSales : arcelikSatisFiyati;
+
+  msg += "\n💰 *Arçelik Satış Fiyatı: " + money(arcelikSatisFiyati) + "*\n";
+  msg += "🏷️ *Arçelik İndirimli Satış Fiyatı: " + money(arcelikIndirimliSatisFiyati) + "*\n";
+  msg += "💎 *Mağazamıza Özel İndirimli Fiyat*\n";
 
   if(karYuzde !== null && calc){
     const tablo = karYuzde === 3 ? latestPay3 : latestPay5;
     if(tablo && tablo.length){
-      msg += "\n💳 *Ödeme Seçenekleri*\n";
+      msg += "💳 *Ödeme Seçenekleri*\n";
       for(const row of tablo){
         msg += "   " + row.label + ": *" + money(row.price) + "*\n";
       }
