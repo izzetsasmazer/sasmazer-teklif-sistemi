@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="tr">
 <head>
@@ -8,29 +7,37 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
-    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#071426}
-    header{background:#c90000;color:white;padding:24px 18px}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f0f2f5;color:#071426}
+    header{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);color:white;padding:0}
+    .header-inner{max-width:1180px;margin:auto;padding:18px 18px;display:flex;align-items:center;gap:16px}
+    .header-logo{height:48px;max-width:160px;object-fit:contain;display:none}
+    .header-logo.visible{display:block}
+    .header-text h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+    .header-text .sub{font-size:12px;margin-top:3px;color:rgba(255,255,255,.7)}
+    .header-logo-upload{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .logo-btn{background:rgba(255,255,255,.12);color:white;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+    .logo-btn:hover{background:rgba(255,255,255,.2)}
     .wrap{max-width:1180px;margin:auto}
-    h1{margin:0;font-size:26px}
-    .sub{font-size:13px;margin-top:6px;font-weight:600}
-    main{max-width:1180px;margin:22px auto;padding:0 14px}
-    .card{background:white;border-radius:14px;box-shadow:0 4px 18px #0001;padding:18px;margin-bottom:16px}
+    main{max-width:1180px;margin:20px auto;padding:0 14px}
+    .card{background:white;border-radius:14px;box-shadow:0 2px 12px #0001;padding:18px;margin-bottom:14px;border:1px solid #e8ecf0}
     .status{padding:13px;border-radius:10px;margin-bottom:12px}
     .ok{background:#dff5e4;color:#175c2b}
     .err{background:#ffe0e0;color:#8a0000}
     .load{background:#fff3cd;color:#7a5400}
     label{font-weight:bold}
-    input{width:100%;box-sizing:border-box;padding:14px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px}
+    input[type=text],input:not([type]){width:100%;box-sizing:border-box;padding:14px;border:2px solid #e8ecf0;border-radius:10px;font-size:16px;transition:border-color .2s}
+    input[type=text]:focus,input:not([type]):focus{outline:none;border-color:#e50914}
     .hint{font-size:12px;color:#33506f;margin-top:8px}
     .results{display:grid;gap:8px;margin-top:10px}
-    .result{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #e3e7ee;border-radius:10px;padding:12px;background:#fbfcff}
-    .result.added{background:#f2f9f5;border-color:#8bd0a6}
+    .result{display:flex;justify-content:space-between;align-items:center;gap:12px;border-left:3px solid #e8ecf0;border-radius:0 10px 10px 0;padding:12px;background:#fafbfc;border-top:1px solid #e8ecf0;border-right:1px solid #e8ecf0;border-bottom:1px solid #e8ecf0}
+    .result.added{background:#f2f9f5;border-left-color:#8bd0a6}
     .rtitle{font-weight:bold}
     .muted{color:#33506f;font-size:12px}
     .priceLine{font-size:14px;margin-top:4px}
-    button{border:0;border-radius:9px;padding:9px 13px;background:#1767c2;color:white;font-weight:bold;cursor:pointer}
-    button.red{background:#d9251d}
-    button:disabled{background:#91b5df;cursor:not-allowed}
+    button{border:0;border-radius:9px;padding:9px 13px;background:#e50914;color:white;font-weight:bold;cursor:pointer}
+    button.red{background:#e50914}
+    button.gray{background:#eef2f7;color:#101828}
+    button:disabled{background:#f5a0a5;cursor:not-allowed}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;border-bottom:1px solid #edf0f5;text-align:right;font-size:14px;white-space:nowrap}
     th:first-child,td:first-child{text-align:left;white-space:normal}
@@ -60,6 +67,7 @@
     .payBox.low h3{background:#f00000;color:white}
     .payBox.high h3{background:#fff200;color:#000}
     .payTable{width:100%;border-collapse:separate;border-spacing:0 6px}
+    .payTable tr{overflow:hidden}
     .payTable td{padding:12px 14px;font-size:17px;border:0}
     .payTable td:first-child{width:42%;text-align:center;font-weight:800;color:#000;border-radius:9px 0 0 9px}
     .payTable td:last-child{text-align:right;font-size:22px;font-weight:900;color:#002b5c;border-radius:0 9px 9px 0}
@@ -83,40 +91,125 @@
     }
 
     @media(max-width:600px){
-      .payGrid{grid-template-columns:1fr;gap:12px}
-      .payBox{padding:10px}
-      .payBox h3{font-size:17px;padding:8px;margin-bottom:8px}
-      .payTable{border-spacing:0 5px}
-      .payTable tr{display:grid;grid-template-columns:42% 58%;border-radius:8px;overflow:hidden}
-      .payTable td{display:flex;align-items:center;box-sizing:border-box;border:0;padding:9px 10px}
-      .payTable td:first-child{width:auto!important;justify-content:center;text-align:center!important;font-size:14px;font-weight:800;border-radius:0!important}
-      .payTable td:last-child{width:auto!important;justify-content:flex-end;text-align:right!important;font-size:18px!important;font-weight:900;color:#002b5c;border-radius:0!important;white-space:nowrap}
+      .payGrid{
+        grid-template-columns:1fr;
+        gap:12px;
+      }
+
+      .payBox{
+        padding:10px;
+      }
+
+      .payBox h3{
+        font-size:17px;
+        padding:8px;
+        margin-bottom:8px;
+      }
+
+      .payTable{
+        border-spacing:0 5px;
+      }
+
+      .payTable tr{
+        display:grid;
+        grid-template-columns:42% 58%;
+        border-radius:8px;
+        overflow:hidden;
+      }
+
+      .payTable td{
+        display:flex;
+        align-items:center;
+        box-sizing:border-box;
+        border:0;
+        padding:9px 10px;
+      }
+
+      .payTable td:first-child{
+        width:auto!important;
+        justify-content:center;
+        text-align:center!important;
+        font-size:14px;
+        font-weight:800;
+        border-radius:0!important;
+      }
+
+      .payTable td:last-child{
+        width:auto!important;
+        justify-content:flex-end;
+        text-align:right!important;
+        font-size:18px!important;
+        font-weight:900;
+        color:#002b5c;
+        border-radius:0!important;
+        white-space:nowrap;
+      }
     }
   </style>
 </head>
 
 <body>
 <header>
-  <div class="wrap">
-    <h1>Şaşmazer Teklif Sistemi</h1>
-    <div class="sub">Tüm ürünlü fiyat, alış/PP, Paro ve kombin kampanya hesaplama</div>
+  <div class="header-inner">
+    <img class="header-logo visible" src="data:image/jpeg;base64,/9j/4QC8RXhpZgAASUkqAAgAAAAGABIBAwABAAAAAQAAABoBBQABAAAAVgAAABsBBQABAAAAXgAAACgBAwABAAAAAgAAABMCAwABAAAAAQAAAGmHBAABAAAAZgAAAAAAAABgAAAAAQAAAGAAAAABAAAABgAAkAcABAAAADAyMTABkQcABAAAAAECAwAAoAcABAAAADAxMDABoAMAAQAAAP//AAACoAQAAQAAAPIAAAADoAQAAQAAAEgAAAAAAAAA/+ENkGh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8APD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4KPHg6eG1wbWV0YSB4bWxuczp4PSdhZG9iZTpuczptZXRhLyc+CjxyZGY6UkRGIHhtbG5zOnJkZj0naHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyc+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpBdHRyaWI9J2h0dHA6Ly9ucy5hdHRyaWJ1dGlvbi5jb20vYWRzLzEuMC8nPgogIDxBdHRyaWI6QWRzPgogICA8cmRmOlNlcT4KICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0nUmVzb3VyY2UnPgogICAgIDxBdHRyaWI6Q3JlYXRlZD4yMDI2LTA1LTA0PC9BdHRyaWI6Q3JlYXRlZD4KICAgICA8QXR0cmliOkRhdGE+eyZxdW90O2RvYyZxdW90OzomcXVvdDtEQUhGLTh5TS1GZyZxdW90OywmcXVvdDt1c2VyJnF1b3Q7OiZxdW90O1VBRXNVNmxXV1VrJnF1b3Q7LCZxdW90O2JyYW5kJnF1b3Q7OiZxdW90O0JBRXNVMUQ4ZHFZJnF1b3Q7fTwvQXR0cmliOkRhdGE+CiAgICAgPEF0dHJpYjpFeHRJZD4xYjIzZjNmNS0zMDExLTRlMTMtOTgyZC02NmFkMWE0NDk2MWY8L0F0dHJpYjpFeHRJZD4KICAgICA8QXR0cmliOkZiSWQ+NTI1MjY1OTE0MTc5NTgwPC9BdHRyaWI6RmJJZD4KICAgICA8QXR0cmliOlRvdWNoVHlwZT4yPC9BdHRyaWI6VG91Y2hUeXBlPgogICAgPC9yZGY6bGk+CiAgIDwvcmRmOlNlcT4KICA8L0F0dHJpYjpBZHM+CiA8L3JkZjpEZXNjcmlwdGlvbj4KCiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0nJwogIHhtbG5zOmRjPSdodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyc+CiAgPGRjOnRpdGxlPgogICA8cmRmOkFsdD4KICAgIDxyZGY6bGkgeG1sOmxhbmc9J3gtZGVmYXVsdCc+VEVLxLBMIEluc3RhZ3JhbSBHw7ZuZGVyaXNpICg0OjUpIC0gMTwvcmRmOmxpPgogICA8L3JkZjpBbHQ+CiAgPC9kYzp0aXRsZT4KIDwvcmRmOkRlc2NyaXB0aW9uPgo8L3JkZjpSREY+CjwveDp4bXBtZXRhPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo8P3hwYWNrZXQgZW5kPSd3Jz8+/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgASADyAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A+qaKKKACiiigAoqteX1rZNbi7uIoTPKIYg7AeY56KPU1ZoHZhRRRQIKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKK57UvG3hjTQftuv6ZER1X7Qpb8gSa4jXvjt4U09XXTvteqSjgeTHsQ/8AAnx+gNJyS3OqjgcRXdqcG/kesVwXxD+KGheDY5IJJRe6rj5bOBgSD23nog+vPtXhPjL41+JNfR7fT2TR7NuCtsxMrD3kPI/4CBXlzMXZmYlmY5JJySfWspVex9LgOGJtqeLdl2X6s6bxP441zxH4jh1i+ucT20gktoo8iODByAo+oGT1NfZfhnVode8P6fqlsR5V3AsoHoSOR+ByPwr4Nr6a/Zg8Q/bPDV9ocz5lsJfNiBP/ACyk5wPowb8xSpy1szp4jwEI4WFSkrKGnyf/AAT2uiig1ufDmL4p8VaF4Ushd+ItUtdPgYkKZnwXI6hV6sfYA1yegfGz4fa7qUdhYeI4BcyNtjW4ikgDnsAzqBn2zXyJr97qHxf+NyWl/fG3jvb42duW5W2gDEAKvrgZ7ZY+9db8Xf2e7zw5caMngiPVtcN4JBOjQhjEV24YsoCqDu7+nU0AfalcH4p+LvgXwxePaav4itUu0OHhgVp2Q+jBAdp9jzXnPxYj8f2PwM8J6fpkl0utzC3sNSjtzunctHgKHHT5gAxB5z1xmuO8P/ssyt4dluvE2uNbao0TOtvaoHjibGQHc/e98Y9ietAH0z4T8VaJ4u0z+0PDmpQX9qG2s0ROUb0ZTgqfYgVa13WtN0DTpL/Wr62sbNOGmuJAi57DJ6n2618c/saahd2/xNvrGF2Nrc6fI0yZ4JRl2t9Rkj/gRrL/AGlfE2oeLPi5c6I9x5en6dOtlbRO2EVzgPIfcsevoBQB9OWnx4+G91fi0j8Swq5baHlgljjz/vsoAHuTivTIZUmiSWF1kjdQyupyGB6EHuK+O/il+zi3hrwrZXnhi51XWtXa4SCa2W3DBwQcuoUZUAjuSMHrXpnhnW9Y+En7N6XPiqBotXtfMgsrWZwzbnc+UpwTwOWxnhRigD0vxn8SfCPgyZYPEet21pcsu4QANJLg9CUQEge5pfBXxH8J+NZJIvDeswXc8a73hKtHIF9drgEj3HFfIfwW+GN98Yte1bWfEmpXaWEcmbm6XBluJm52qSCBgck4OAQAOeOV+KHh8fDj4majo3hnVbqUQKESVW2zKJYxujYrjJwxBx1B6UAfZ+u/Gv4faHfvZX3iS2NwjbHW3jknCnuCyKR+tdf4Z8R6R4o0tNR8P6hb39mxK+ZC2cH0I6qfYgGvlTVP2dLLQvhHf+INd1e6g162sjeNCAogjYDIiIxuLfw5BHJ6er/2JJ7weJ/EkCM/2A2cbyLnjzQ+EP1wXoA+sdY1XT9FsJL3V723srOP781xIEQfia4Ox+OHw6vdUSwg8TW3nuQqtJFJHGT6b2UL+ZrxD4gfD/x78UvjJremXt48WhaZOBFcSqRbwROoZAiD78hUjPv1IGK474+fB2y+Gel6Neafqtze/a5HhlWeNVwwUEFcduvBz9aAPukEEAg5B71wt78W/AdleT2tz4o0yOeB2jkQyE7WBwRwPWsP4LHUfE37P+iwzahcWd5cWclqt5HhpERZHjVlz32KMH8a+Z/jv8OvCnw4W3sdP1vUdQ1+fEhgkEYSGL+85Azk9h9Se2QD6wj+MXgCWRY4/FOnO7EKqqzEknoAMV2Or6tp+jafJfate29lZxjLTXEgjUfie/tXyl8A/Adj4O8NzfFDx4PKtrWLztOt3Hzeiy4PVmJAQe+fQ1ycTeLP2jPiI0TzGz0i2+fHLQ2MJPHH8UjY+pPoBwAfTdv8dPhxcaitlH4ntxKx2h3hlSPP++VCj65xXpSOsiK6MGRhkEHII9a+Fv2ivhp4a+HA0K20LUby41G5V2uYbmRWIUY2vhQNoJLDHfHsa9cHjS78Hfsl6Pd3MzLq97aGysix+YB2cIw/3YhkfQUAevaZ8TPBuqazHpWneIbG51CR2jSCNiWZlyT27AHn2o0f4l+D9Z8S/wBgaVr1pear82IYdzBtoJOHA2nAB6Gvh/4O+DvE/jLU7+y8LKkCvB5F1fysVSCJz8y5HOWAxgckZHQmvqr4D/BVPhte6jqOo3sGo6ncKIYZI4yoii6sAD3Jx+Cj1NAHs1FFFAHxP8VtBHhvx9q9jGgS3MvnwAdPLf5hj6ZI/CuSr6F/an0HMeka9En3SbOYgdjlk/8AZh+NfPVcs1Zn6lk+J+s4OE3vs/VBRRRUHphXd/BPxD/wj3xD02WR9trdn7HNk4GH+6T9GCmuEq3pVhe6nqNvZ6XBLPezMFijiGWLf0x1z2pp2ZzYulCtQnTqbNM++qZNNHCm+aRI0yBucgDJOByaq6Kt4uj2K6ps+3iBBcbDlfM2jdg+mc18Z/tNX3iLQPjbHqF1NPLYRPb32mRSszQfuwuQF6ffU5xzznvXYfkjVnYf+0Z8Jb7wVrk/i7w8z/2LPciYmJisljMzZHI/h3fdYdDgehPtH7OfxZk8ZeENSTxNKi6jokYe5ujwJYcEiRh2YbTux7HvXjPxX/aIm8beCZvD9loQ08XgUXU0lwJeAwbag2jGSBye3bvXS/BH4Xa3H8G/G15NBJBqPiCwaCxt3G1mRVYgkdt5OBnsM96BGf4o+PPjbxz4jbRPhjZS20LkiExQiS5lUdXYtlYx39u7VyfxH8LfFDw74bbXvGviW4iSWRYFtZNVeSWRm/hCrleBknnoKzvgR8Sbb4W67rEuq6PPdtdQrARGQkkLKxJUhuxPUf7IrR1bU/Fv7RPxAtrS0t/s2n2/CRqS0NlET80jt/Exx7ZwABQB6H+xb4aNtba/4rvAI4XUWMDvwCoIeQ5PbIQZ9jUf7Unwgnubi88d+GwJ4mjEuo26nkAADzk9RgDcPbPPOOd/am8N33g+18K6VpEl3H4ThsBapGrsI2uFdmdnA43sGByeuDjpU+rftM3l58Pn0SHQI4dUmtDZyXZnzEAU2l1j29SM8E4B9aAO0/ZR+K1/4gMnhHxDK1zc2tuZrO6c5d41IBjc9yMgg+mc9K4j9sLxe2teMrHwrYMZINLUPMic77iQDA46lVwPqxqH9m3RZ/Cmn698TNbheDSNOsJI7QONv2qRsD5fUcBc9y3sayv2dfD9z8Q/jJJrusg3EVlK2qXbtyHmLExr/wB9c49ENAH014J02y+EPwWjbUAFOn2jXl6R1knYbmX67iEH0FfMXwC0K6+JXxqfW9YHnQ2szareM3KtJuzGn/feOPRTXpn7Z/jIW+l6Z4QtJf3t0ReXgB6RqcRqfq2W/wCACu0/Zh8Jx+DfhWmp6iBBdaqPt9w78bIQP3YPsFy3/AjQByX7ZvjP7FoWneErSTE9+wursA9IUPyKf95wT/wCsLwD4htPgZ8F7TV7q0Fz4k8TyG4trVjtAiUYRnPXaA27jkmTHqR5yPtHxt+Pn8Ysr26/79Wcf8jsH/fTV6D+2loF3BfeGtUtrcjSIrU2IKD5IXDblU+mVPH+6aAMjTNV+N/xZR73Sbq7stJclVkt5BZQD1Ct99/Tq1eWePNH8RWXjAeGtY1ZtZ1WKRIgsd1JcKsr4+QF8fNyAcd+K9btv2kn0j4a6ZoXh7Q/sur2tpHafaZHUwx7V2+Yq4yScZweATznvD8GPDEXhaxu/iz8RvNS3g3S6dDN/rry4fOJMHqTk7c9TlugyQD23xd4s074H/CXSLAlLjVYrRbWzts/66UL87t/sBiSfqB1NeGfAb4c3/xT8XXXjDxmZbnSkuDJI0v/AC+zddg/2F4zjjGFHfHlfjnxte+OvGb634j8x4XkCi2hfHlQA/6tCQQOM846kk19LfCb46wazqui+DvC3gdrWDAhQLfApBEvLO37vnAyT3J9zQBgftp+J3SfQ/Cdo+yBY/t9wi8A8lIx9Bhzj3Fec/Du5+LWjaFJpfgnRdVtLa6k86S4i0z5pMgAfvXXgY6YI6n1roP2ydHvLX4kWmqSRObG8so0ilx8u9CwZc+vIP41q6j+1LqY8L29jo2gwWmqrCsT3c03mRqQMbkjwPqASQPQ0AWvAP7O+v8AiHXTrXxOv3UGQSTW32jzrmc8HEjgkKOnQk44461zH7UniI+IPiHY+EtDjDWWiqtlDbwjCmdsAqo9vkQDtg13fwc1fxb4H+HfjTxr41MgtLwC7tEvWInuLojarbT0VsoPoowMCuI/ZV8LT+LvifceJNUDTw6WTdySPz5l1ITsz7g7n+oFAH1R8JfBNr4C8D6fo0CoblV8y7lUf62dh87fTsPYCuxoooAKKKKAOV+KOg/8JJ4E1fT1UNO0Jlh4/wCWifMuPqRj8a+JP0r9Ba+b/EHwE1q88SajPpt7psOmzXDyQiR33orHOCAuOMkdayqRb1R9Tw5mdLCqdKvKy3X6nhVH8q+gtJ/Z2O4Nq+v5Xulrb4J/4Ex/pXo/hb4T+EvDsizQacLu6XkT3p81gfYH5R+AqFSbPaxHE2Dpr93eT+78z5w8C/DDxF4ueOSC2NlpxPN5cqVUj/YHV/w496+m/h/8PtF8E2hXT4jNeyDE15KAZH9h/dX2H45rsAABgDiitYwUT5PMc5xGO92TtHsv17hXhf7RHxN8LeHgfDviDww2u3zwi4gjuYlEC7sgNvPzAgg/dGe2RXulcZ45+GfhbxzqVhfeJdPa7lskZIwJnjBUkHDbSMjI/U1Z5BxPwE8O+CPEXgvSPE9p4V0i31RtyTbYSwimRiCV3lsdiO/PWvaap6Rpljo+nQWGlWkFpZQLtjhhQIqj2Aq5QBx/iL4ZeDPEeotf6z4c0+5vH+/MUKs/uxUjcfc1veH9B0rw7YLZaHp1rYWoOfKt4ggJ9Tjqfc81pUUAeS/Hn4meHPBdhHpXiPQptabUIWkjtniQwPtOMMzdCDjoCRkVzH7PmheA/HXhT+3JfB+iQapb3UkM8SxM8aEHchCuT/Cy/iDXqnj74e+HfHq2CeJrN7pLJ2eILK0f3gAQSpBwcDjPatvw7oOl+G9Li03QrGCxso+VihXaM9ye5J9TzQAa1pukXmkPa61Z2M+mKAWiuo1aEBehIbjjt6UzQNB0TQ4pP7A0vTtPjuMO/wBjgSISYHBO0DPB4rkPjC13qFrpHh6x0+fUP7RuhJdQxME3W8WHdS7fKuTtHJ9a43w5d+J500HQkm1PT7jTIL2C4iRRiVoSjQKXIK4KkDIPI3YPor6nbTwftKSqcyX+Xf71bY9X1fwb4Y1m9e81fw9pF9duArTXNnHI5AGACzAnAq/ftpa2j2F+bIWskXltbzFQjRn5NpU8bTnbjpzivEP+Eh19vDkc1hreuXFzIbYax59sY0sHLHzFSQRkpg4UgK21cGqF1Nrt1NBeXplvJ/skUcVx9nZi8X9ox7c7o1ydufm2jIG73pcxtHLX9qSPb/D3hnwxpM7Xvh7RtHs5mUxGeyto42Izyu5R0yOnqKuakNH1XS5YNR+w3enzt5LpMUeJznG0g8E57eteVfCKfVrbXo7HVRdWumP9tfTo40Ijlf7S5kMvGd4BBUdMZPJq1deGZYfibeW1mjPpcUDeILezMf7r7eQYxz06jfj1OadzKWDjGpKEpbK/r/wTpNO+E/gHSr1L218MaXHOjZVnj3hT2IDEgH8K39d0vw7rlnu12y0rULW0Zjm8jjlSFhw33shT2NeBz3niTWPDkrarqOoTW8LWlzeIqymSCbz1Df8ALFQoALHYC2CqnNTz3Os2lv4ot2F7HpFxJqr2PlRFvtNxuz++BU5BXlexOevSlzG/9mW3mrnrkfgn4eyzLDH4b8LvKxICLZQFiQATgY7Agn6ir+i6L4R0HWGi0XTtC07VXj2lLWGKKZk64woDY4B/CvNvAkd5F8Q7fdBKkMl/qDuzQYB/0e2wc445z0Izj2qhq0KWHjW7NpaDULx9aW4/s+8050uslh+9hukODGByNxxgYIp3M1gY8/JzdL/ie2a/pGla5pz2eu2Vpe2TEExXMaumexweh9653RPhd4I0S+W90zwzpkN0vKyGLeUPqu7OD7ivGNV1XXta0rVIri91mazmtDdSROGLJJHdJ8pAjAQhCSUUt0BzXSXGvawbqWK+1nXLPQftl4sV9bQF5mKpGYE+4flILEDHzHjNLmKllkkviVz2fWdH0zW7P7JrOn2moWocP5N1Csqbh0OGBGRTND0LSNBgkh0PTLHToZG3ulpAsSs2MZIUDJxXi2v694nT7aH1TU4IY7xB+8he3Z1+yo23eiOIzvJO0ggnIzxiu8+F+qavqd9rB1Y34RYLJoo7uMIyFocvwABknk47+nSncxqYKVOn7TmVv+G/zO/ooopnEFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUYoooAo6dpVpp895Nao6y3kvnTM0jNubGO5447Cr1FFA229WFFFFAgoxRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH/2Q==" alt="Şaşmazer Logo">
+    <div class="header-text">
+      <h1>Şaşmazer Teklif Sistemi</h1>
+      <div class="sub">Fiyat, Paro ve kombin kampanya hesaplama</div>
+    </div>
   </div>
 </header>
 
 <main>
   <div id="status" class="status load">Ürün dosyası yükleniyor...</div>
 
+  <!-- Müşteri Bilgisi -->
+  <div class="card" style="padding:14px 18px">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:2;min-width:160px">
+        <label style="font-size:12px;color:#33506f;display:block;margin-bottom:4px">Müşteri Adı</label>
+        <input type="text" id="customerName" placeholder="Müşteri adı soyadı..." style="padding:9px 12px;font-size:14px">
+      </div>
+      <div style="flex:2;min-width:150px">
+        <label style="font-size:12px;color:#33506f;display:block;margin-bottom:4px">Telefon (WhatsApp)</label>
+        <input type="text" id="customerPhone" placeholder="05xx xxx xx xx" style="padding:9px 12px;font-size:14px">
+      </div>
+      <div style="min-width:130px">
+        <label style="font-size:12px;color:#33506f;display:block;margin-bottom:4px">Tarih</label>
+        <input type="text" id="offerDate" style="padding:9px 12px;font-size:14px;width:100%;box-sizing:border-box">
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <label>Ürün Ara</label>
-    <input id="search" placeholder="Ürün adı veya SAP kodu yazın. Örn: 10120, TKM, 2030, AFC..." autocomplete="off" />
+    <input type="text" id="search" placeholder="Ürün adı veya SAP kodu yazın. Örn: 10120, TKM, 2030, AFC..." autocomplete="off" />
     <div class="hint">Ürün aramak için yukarıya ürün adı veya SAP kodu yazın.</div>
     <div id="results" class="results"></div>
   </div>
 
   <div class="card">
-    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
-      <h2 style="margin:0 0 10px">Seçilen Ürünler</h2>
-      <button class="red" onclick="clearCart()">Temizle</button>
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <h2 style="margin:0">Seçilen Ürünler</h2>
+      <button onclick="window.open('teklifler.html','_blank')" style="background:#6c5ce7;font-size:13px;padding:7px 13px">📋 Kayıtlı Teklifler</button>
+    </div>
+
+    <!-- Kar oranı seçici + işlem butonları -->
+    <div style="background:#f0f4ff;border:1.5px solid #c8d8f5;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap">Teklif Oranı:</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:600;color:#1a1a2e">
+        <input type="radio" name="karOrani" id="kar3" value="3" checked style="width:16px;height:16px;accent-color:#0f3460">
+        Kar %3
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:600;color:#7a4200">
+        <input type="radio" name="karOrani" id="kar5" value="5" style="width:16px;height:16px;accent-color:#e8a000">
+        Kar %5
+      </label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">
+        <button onclick="saveTeklif()" style="background:#0f3460;font-size:13px;padding:7px 14px">💾 Kaydet</button>
+        <button onclick="whatsappTeklif()" style="background:#25D366;font-size:13px;padding:7px 14px">📲 WhatsApp</button>
+        <button onclick="printTeklif()" style="background:#555;font-size:13px;padding:7px 14px">🖨️ Yazdır / PDF</button>
+        <button class="red" onclick="clearCart()" style="font-size:13px;padding:7px 14px">Temizle</button>
+      </div>
     </div>
 
     <div class="noteBox">
@@ -170,7 +263,9 @@
 
   <div class="card">
     <h2 style="margin-top:0">Ödeme Seçeneği</h2>
-    <div class="small">Aşağıdaki fiyatlar Excel’deki ödeme formülüne göre Net Alış Maliyeti üzerinden hesaplanır.</div>
+    <div class="small">
+      Aşağıdaki fiyatlar Excel’deki ödeme formülüne göre Net Alış Maliyeti üzerinden hesaplanır.
+    </div>
 
     <div class="payGrid">
       <div class="payBox low">
@@ -190,6 +285,8 @@
   </div>
 
   <div id="campaignDetails"></div>
+
+
 </main>
 
 <script>
@@ -199,21 +296,57 @@ const FIXED_SUPPORT = {
   SOGUTUCU_TKM: 10114,
   KURUTUCU_TV: 9179,
   BE_DONDURUCU: 9342,
-  ANK_UCLU: 12750
+  ANK_UCLU: 12750,
+  TV_TKM: 4759,
+  SUPURGE_TKM: 2625,
+  BE_ELEKTRONIK: 5950,
+  KLIMA_FIXPACK7000: 7000,
+  KLIMA_FIXPACK2000: 2000,
+  AKILLI_SAAT_TKM: 1699,
+  ANK_SET_DONDURUCU: 9342,
+  DEGISIM_15000: 12750,
+  DEGISIM_20000: 17000,
+  TKM_FIXPACK: 3020,
+  ESPRESSO_FIXPACK: 6550,
+  SUPURGE_FIXPACK3000: 3000,
+  SUPURGE_FIXPACK1500: 1500,
+  CAYCI_FIXPACK: 500
 };
 
 const FIXED_SALE_DISCOUNT = {
   SOGUTUCU_TKM: 11899,
   KURUTUCU_TV: 10799,
   BE_DONDURUCU: 10990,
-  ANK_UCLU: 15000
+  ANK_UCLU: 15000,
+  TV_TKM: 5599,
+  SUPURGE_TKM: 3349,
+  BE_ELEKTRONIK: 7000,
+  KLIMA_FIXPACK7000: 7000,
+  KLIMA_FIXPACK2000: 2000,
+  AKILLI_SAAT_TKM: 1999,
+  ANK_SET_DONDURUCU: 10990,
+  DEGISIM_15000: 15000,
+  DEGISIM_20000: 20000,
+  TKM_FIXPACK: 3200,
+  ESPRESSO_FIXPACK: 7300,
+  SUPURGE_FIXPACK3000: 3000,
+  SUPURGE_FIXPACK1500: 1500,
+  CAYCI_FIXPACK: 500
 };
+
+// Değişim kampanyaları için özel not
+const DEGISIM_RULES = new Set(["DEGISIM_15000","DEGISIM_20000"]);
+
+// 3'lü ankastre eşleşmesi gereken kurallar (fırın+ocak+davlumbaz)
+const UCLU_ANK_RULES = new Set(["ANK_UCLU","ANK_SET_DONDURUCU","DEGISIM_15000","DEGISIM_20000"]);
 
 let products = [];
 let paroMap = new Map();
 let bundleRules = [];
 let cart = [];
 let latestCalc = null;
+let latestPay3 = [];
+let latestPay5 = [];
 
 const $ = id => document.getElementById(id);
 
@@ -349,10 +482,12 @@ async function loadExcel(){
     bundleRules = ruleRows.map(r => {
       const ruleId = norm(r.rule_id);
       const name = String(r.kampanya_adi ?? "").trim();
+      const note = String(r.not ?? "").trim();
 
       return {
         ruleId,
         name,
+        note,
         saleDiscount: FIXED_SALE_DISCOUNT[ruleId] || num(r.kampanya_indirimi),
         support: FIXED_SUPPORT[ruleId] || 0,
         leftCodes: new Set(splitList(r.sol_kodlar)),
@@ -371,11 +506,6 @@ async function loadExcel(){
   }
 }
 
-function clearSearchBox(){
-  $("search").value = "";
-  $("results").innerHTML = "";
-}
-
 function isAdded(productId){
   return cart.some(x => x.id === productId);
 }
@@ -389,30 +519,10 @@ function addProduct(productId){
   if(item) item.qty++;
   else cart.push({...p, qty:1});
 
-  clearSearchBox();
-  renderCart();
-  $("search").focus();
-}
-
-function removeOneProduct(productId){
-  const item = cart.find(x => x.id === productId);
-  if(!item) return;
-
-  item.qty -= 1;
-
-  if(item.qty <= 0){
-    cart = cart.filter(x => x.id !== productId);
-  }
-
   renderAll();
 }
 
-function removeUnit(unitId){
-  const productId = String(unitId).split("__")[0];
-  removeOneProduct(productId);
-}
-
-function removeAllProduct(productId){
+function removeProduct(productId){
   cart = cart.filter(x => x.id !== productId);
   renderAll();
 }
@@ -423,11 +533,8 @@ function changeQty(productId, delta){
 
   item.qty += delta;
 
-  if(item.qty <= 0){
-    cart = cart.filter(x => x.id !== productId);
-  }
-
-  renderAll();
+  if(item.qty <= 0) removeProduct(productId);
+  else renderAll();
 }
 
 function clearCart(){
@@ -511,37 +618,38 @@ function buildRuleApplications(){
   const apps = [];
 
   for(const r of bundleRules){
-    if(r.ruleId === "ANK_UCLU") continue;
+    // 3'lü ankastre kuralları ayrı işleniyor
+    if(UCLU_ANK_RULES.has(r.ruleId)) continue;
 
     const left = [];
     const right = [];
 
     for(const u of units){
       const p = u.p;
+      // Kod bazlı eşleşme (sol liste boşsa sağ ile de eşleşmeyi dene)
+      const inLeft = codeInSet(p, r.leftCodes) || nameInList(p, r.leftNames);
+      const inRight = r.rightCodes.size > 0
+        ? (codeInSet(p, r.rightCodes) || nameInList(p, r.rightNames))
+        : false;
 
-      let isLeft = false;
-      let isRight = false;
-
-      if(r.ruleId === "BE_DONDURUCU"){
-        isLeft = codeInSet(p, r.leftCodes);
-        isRight = codeInSet(p, r.rightCodes);
-      }else{
-        isLeft = codeInSet(p, r.leftCodes) || nameInList(p, r.leftNames);
-        isRight = codeInSet(p, r.rightCodes) || nameInList(p, r.rightNames);
-      }
-
-      if(isLeft) left.push(u);
-      if(isRight) right.push(u);
+      if(inLeft) left.push(u);
+      if(inRight) right.push(u);
     }
+
+    // Sağ liste boşsa eşleşme yapma
+    if(right.length === 0) continue;
 
     for(const a of left){
       for(const b of right){
         if(a.unitId === b.unitId) continue;
 
+        const note = r.note || "";
         apps.push({
           id: r.ruleId + "__" + a.unitId + "__" + b.unitId,
           ruleId: r.ruleId,
           name: r.name,
+          note,
+          isDegisim: DEGISIM_RULES.has(r.ruleId),
           discount: r.saleDiscount,
           support: r.support,
           units: [a,b]
@@ -550,27 +658,42 @@ function buildRuleApplications(){
     }
   }
 
-  const ankRule = bundleRules.find(r => r.ruleId === "ANK_UCLU");
+  // 3'lü ankastre kuralları: fırın + ocak + davlumbaz eşleşmesi (kod bazlı önce, sonra isim)
+  for(const r of bundleRules){
+    if(!UCLU_ANK_RULES.has(r.ruleId)) continue;
 
-  if(ankRule){
-    const ovens = units.filter(u => isAnkastreFirin(u.p));
-    const hobs = units.filter(u => isAnkastreOcak(u.p));
-    const hoods = units.filter(u => isAnkastreDavlumbaz(u.p));
+    // leftCodes = fırın+ocak+davlumbaz hepsini içeriyor (sol_kodlar alanında birleşik)
+    // rightCodes = dondurucu (ANK_SET_DONDURUCU için) ya da boş (ANK_UCLU, DEĞİŞİM için)
+    const hasRightCodes = r.rightCodes.size > 0;
+
+    // Sol tarafı fırın/ocak/davlumbaz olarak ayır
+    const ovens   = units.filter(u => codeInSet(u.p, r.leftCodes) ? isAnkastreFirin(u.p)     : (r.leftCodes.size === 0 && isAnkastreFirin(u.p)));
+    const hobs    = units.filter(u => codeInSet(u.p, r.leftCodes) ? isAnkastreOcak(u.p)      : (r.leftCodes.size === 0 && isAnkastreOcak(u.p)));
+    const hoods   = units.filter(u => codeInSet(u.p, r.leftCodes) ? isAnkastreDavlumbaz(u.p) : (r.leftCodes.size === 0 && isAnkastreDavlumbaz(u.p)));
+    const freezers = hasRightCodes ? units.filter(u => codeInSet(u.p, r.rightCodes)) : [null];
 
     for(const f of ovens){
       for(const o of hobs){
         for(const d of hoods){
-          const ids = new Set([f.unitId, o.unitId, d.unitId]);
-          if(ids.size !== 3) continue;
+          const baseIds = new Set([f.unitId, o.unitId, d.unitId]);
+          if(baseIds.size !== 3) continue;
 
-          apps.push({
-            id: "ANK_UCLU__" + f.unitId + "__" + o.unitId + "__" + d.unitId,
-            ruleId: "ANK_UCLU",
-            name: ankRule.name || "Ankastre fırın + ocak + davlumbaz kampanyası",
-            discount: FIXED_SALE_DISCOUNT.ANK_UCLU,
-            support: FIXED_SUPPORT.ANK_UCLU,
-            units: [f,o,d]
-          });
+          for(const fr of freezers){
+            const allUnits = fr ? [f,o,d,fr] : [f,o,d];
+            const allIds = new Set(allUnits.map(u => u.unitId));
+            if(allIds.size !== allUnits.length) continue;
+
+            apps.push({
+              id: r.ruleId + "__" + [...allIds].join("__"),
+              ruleId: r.ruleId,
+              name: r.name || "Ankastre set kampanyası",
+              note: r.note || "",
+              isDegisim: DEGISIM_RULES.has(r.ruleId),
+              discount: r.saleDiscount,
+              support: r.support,
+              units: allUnits
+            });
+          }
         }
       }
     }
@@ -616,6 +739,7 @@ function chooseBestCampaigns(){
 
     const totalSalesDiscount = bundleDiscount + outsideParoDiscount;
     const totalCostSupport = bundleSupport + outsideParoSupport;
+
     const score = totalSalesDiscount * 100000 + totalCostSupport;
 
     return {
@@ -657,6 +781,7 @@ function chooseBestCampaigns(){
   }
 
   backtrack(0, new Set(), []);
+
   return best;
 }
 
@@ -771,7 +896,7 @@ function rowHtml(unit, isSet){
         </div>
       </td>
       <td><b>${money(rowTotal)}</b></td>
-      <td><button class="red" onclick="removeUnit('${unit.unitId}')">Sil</button></td>
+      <td><button class="red" onclick="removeProduct('${p.id}')">Sil</button></td>
     </tr>
   `;
 }
@@ -796,7 +921,7 @@ function renderCart(){
     if(g.type === "set"){
       html += `
         <tr class="setHead">
-          <td colspan="6">🎯 Set kampanya: ${escapeHtml(g.app.name)}</td>
+          <td colspan="6">🎯 Set kampanya: ${escapeHtml(g.app.name)}${g.app.isDegisim ? " ⚠️ DEĞİŞİM" : ""}</td>
           <td colspan="4" style="text-align:right">
             Satış indirimi: ${negMoney(g.app.discount)} / Maliyet destek: ${negMoney(g.app.support)}
           </td>
@@ -863,6 +988,9 @@ function renderInstallment(){
     ["9 Taksit", highCash / (1 - (highCash > 70000 ? 0.15 : 0.21))]
   ];
 
+  latestPay3 = lowRows.map(r => ({ label: r[0], price: r[1] }));
+  latestPay5 = highRows.map(r => ({ label: r[0], price: r[1] }));
+
   $("payTable3").innerHTML = lowRows.map(r => `
     <tr>
       <td>${r[0]}</td>
@@ -911,6 +1039,8 @@ function renderCampaignDetails(calc){
     html += `
       <div class="campItem">
         <b>${escapeHtml(app.name)}</b>
+        ${app.isDegisim ? `<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:7px 10px;margin:6px 0;font-size:12px;color:#7a5400">⚠️ <b>Değişim Kampanyası:</b> Eski ürün teslim şartı vardır.</div>` : ""}
+        ${app.note && !app.isDegisim ? `<div class="small" style="color:#8a4b00">Not: ${escapeHtml(app.note)}</div>` : ""}
         <div class="small">Bu setteki ürünler:</div>
         <ul style="margin:6px 0 8px">
           ${app.units.map(u => `<li>${escapeHtml(u.p.name)} <span class="small">(${escapeHtml(u.p.code)})</span></li>`).join("")}
@@ -937,6 +1067,7 @@ function renderCampaignDetails(calc){
   `;
 
   html += `</div>`;
+
   box.innerHTML = html;
 }
 
@@ -976,7 +1107,7 @@ function renderSearch(){
             ${p.paroDiscount ? `<span class="disc">&nbsp; Tekil Paro: ${negMoney(p.paroDiscount)}</span>` : ""}
           </div>
         </div>
-        <button onclick="addProduct('${p.id}')">${added ? "Tekrar Ekle" : "Ekle"}</button>
+        <button onclick="addProduct('${p.id}')" ${added ? "disabled" : ""}>${added ? "Eklendi" : "Ekle"}</button>
       </div>
     `;
   }).join("");
@@ -997,6 +1128,176 @@ function escapeHtml(v){
 }
 
 $("search").addEventListener("input", renderSearch);
+
+// Tarih otomatik doldur
+(function(){
+  const d = new Date();
+  const s = d.getDate().toString().padStart(2,"0") + "." + (d.getMonth()+1).toString().padStart(2,"0") + "." + d.getFullYear();
+  $("offerDate").value = s;
+})();
+
+// Arama kutusunu ürün eklendikten sonra temizle
+const _origAdd = addProduct;
+window.addProduct = function(productId){
+  _origAdd(productId);
+  $("search").value = "";
+  renderSearch();
+};
+
+// ── WhatsApp ──────────────────────────────────────────────
+function getKarYuzde(){
+  const el = document.querySelector('input[name="karOrani"]:checked');
+  return el ? parseInt(el.value) : 3;
+}
+
+function buildTeklifMsg(karYuzde){
+  const calc = latestCalc;
+  const musteri = $("customerName").value.trim() || "";
+  const tarih = $("offerDate").value.trim();
+
+  let msg = "🏪 *Şaşmazer Teklif*\n";
+  if(musteri) msg += "👤 " + musteri + "\n";
+  if(tarih)   msg += "📅 " + tarih + "\n";
+  msg += "──────────────────\n";
+
+  for(const item of cart){
+    msg += "▪️ " + item.name + "  " + money(item.sales) + (item.qty > 1 ? " x" + item.qty : "") + "\n";
+  }
+
+  if(calc && calc.apps && calc.apps.length){
+    msg += "\n🎁 *Kampanya:* " + calc.apps.map(a => a.name).join(" + ") + "\n";
+    msg += "   Satış indirimi: " + money(calc.bundleDiscount) + "\n";
+  }
+
+  msg += "\n💰 *İndirimli Satış: " + money(calc ? calc.netSales : 0) + "*\n";
+
+  if(karYuzde !== null && calc){
+    const tablo = karYuzde === 3 ? latestPay3 : latestPay5;
+    if(tablo && tablo.length){
+      msg += "\n💳 *Ödeme Seçenekleri*\n";
+      for(const row of tablo){
+        msg += "   " + row.label + ": *" + money(row.price) + "*\n";
+      }
+    }
+  }
+
+  msg += "\n📞 0542 842 90 20 | 0546 235 56 62";
+  return msg;
+}
+
+function whatsappTeklif(){
+  if(!cart.length){ alert("Sepette ürün yok."); return; }
+  const karYuzde = getKarYuzde();
+  const phone = $("customerPhone").value.trim().replace(/\D/g,"");
+  const msg = buildTeklifMsg(karYuzde);
+  const waNum = phone.startsWith("0") ? "90" + phone.slice(1) : (phone.startsWith("90") ? phone : "90" + phone);
+  const url = phone ? "https://wa.me/" + waNum + "?text=" + encodeURIComponent(msg)
+                    : "https://wa.me/?text=" + encodeURIComponent(msg);
+  window.open(url, "_blank");
+}
+
+// ── Yazdır / PDF ──────────────────────────────────────────
+function printTeklif(){
+  if(!cart.length){ alert("Sepette ürün yok."); return; }
+  const calc = latestCalc;
+  const musteri = $("customerName").value.trim() || "";
+  const tarih = $("offerDate").value.trim();
+  const logoSrc = document.querySelector(".header-logo") ? document.querySelector(".header-logo").src : "";
+  const karYuzde = getKarYuzde();
+  const tablo = karYuzde === 3 ? latestPay3 : latestPay5;
+
+  // Ürün satırları — sadece satış fiyatı + paro destek
+  let rows = cart.map(item => {
+    const paroHtml = item.paroDiscount ? "<br><small style='color:#c90000'>Paro: -" + money(item.paroDiscount) + "</small>" : "";
+    return "<tr><td>" + escapeHtml(item.name) + paroHtml + "</td><td style='text-align:center'>" + item.qty + "</td><td style='text-align:right'>" + money(item.sales) + "</td></tr>";
+  }).join("");
+
+  // Kampanya
+  let campHtml = "";
+  if(calc && calc.apps && calc.apps.length){
+    campHtml = "<div style='background:#fff8e1;border-left:4px solid #f0a500;padding:10px 14px;margin-top:14px;border-radius:0 8px 8px 0'>" +
+      "<b style='color:#7a4200'>🎯 Kampanya:</b> " + calc.apps.map(a => escapeHtml(a.name)).join(" + ") +
+      "<span style='margin-left:12px;color:#c90000'>İndirim: " + money(calc.bundleDiscount) + "</span></div>";
+  }
+
+  // Satış analizi
+  let analizHtml = "";
+  if(calc){
+    analizHtml = "<table style='margin-top:14px;font-size:14px'>" +
+      "<tr><td>İndirimsiz Satış</td><td style='text-align:right'>" + money(calc.grossSales) + "</td></tr>" +
+      (calc.singleParoDiscount ? "<tr><td style='color:#c90000'>Paro İndirimi</td><td style='text-align:right;color:#c90000'>-" + money(calc.singleParoDiscount) + "</td></tr>" : "") +
+      (calc.bundleDiscount ? "<tr><td style='color:#c90000'>Kampanya İndirimi</td><td style='text-align:right;color:#c90000'>-" + money(calc.bundleDiscount) + "</td></tr>" : "") +
+      "<tr style='font-weight:bold;font-size:16px;border-top:2px solid #333'><td>İndirimli Satış</td><td style='text-align:right;color:#c90000'>" + money(calc.netSales) + "</td></tr>" +
+      "</table>";
+  }
+
+  // Ödeme tablosu
+  let odemeHtml = "";
+  if(tablo && tablo.length){
+    odemeHtml = "<h3 style='margin-top:20px;color:#1a1a2e'>Ödeme Seçenekleri</h3>" +
+      "<table><thead><tr><th>Ödeme</th><th style='text-align:right'>Fiyat</th></tr></thead><tbody>" +
+      tablo.map(r => "<tr><td>" + escapeHtml(r.label) + "</td><td style='text-align:right;font-weight:bold'>" + money(r.price) + "</td></tr>").join("") +
+      "</tbody></table>";
+  }
+
+  const win = window.open("","_blank","width=820,height=700");
+  win.document.write("<!doctype html><html><head><meta charset='utf-8'><title>Şaşmazer Teklif</title>" +
+    "<style>body{font-family:Arial,sans-serif;margin:30px;color:#111;max-width:700px}" +
+    ".logo{max-height:50px}h2{color:#1a1a2e;margin:6px 0 2px}" +
+    "table{width:100%;border-collapse:collapse;margin-top:10px}" +
+    "th{background:#1a1a2e;color:white;padding:8px 10px;text-align:left}" +
+    "td{padding:7px 10px;border-bottom:1px solid #e0e0e0}" +
+    ".meta{color:#555;font-size:13px;margin-bottom:3px}" +
+    "@media print{.noprint{display:none}}</style></head><body>");
+  if(logoSrc) win.document.write("<img src='" + logoSrc + "' class='logo'><br>");
+  win.document.write("<h2>Teklif</h2>");
+  if(musteri) win.document.write("<div class='meta'>👤 " + escapeHtml(musteri) + "</div>");
+  if(tarih)   win.document.write("<div class='meta'>📅 " + tarih + "</div>");
+  win.document.write("<table><thead><tr><th>Ürün</th><th>Adet</th><th style='text-align:right'>Satış Fiyatı</th></tr></thead><tbody>" + rows + "</tbody></table>");
+  win.document.write(campHtml);
+  win.document.write(analizHtml);
+  win.document.write(odemeHtml);
+  win.document.write("<br><button class='noprint' onclick='window.print()' style='background:#1a1a2e;color:white;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:15px'>🖨️ Yazdır / PDF</button>");
+  win.document.write("</body></html>");
+  win.document.close();
+}
+
+// ── Teklif Kaydet / Geçmiş ────────────────────────────────
+function saveTeklif(){
+  if(!cart.length){ alert("Sepette ürün yok."); return; }
+  const musteri = $("customerName").value.trim();
+  if(!musteri){ alert("Lütfen müşteri adını yazın."); $("customerName").focus(); return; }
+
+  const calc = latestCalc;
+  const karYuzde = getKarYuzde();
+  const tarih = $("offerDate").value.trim();
+  const telefon = $("customerPhone").value.trim();
+
+  const teklif = {
+    id: Date.now(),
+    musteri,
+    telefon,
+    tarih,
+    kaydTarihi: new Date().toLocaleString("tr-TR"),
+    urunler: cart.map(i => ({ name: i.name, code: i.code, qty: i.qty, sales: i.sales, paroDiscount: i.paroDiscount || 0 })),
+    netSatis: calc ? calc.netSales : 0,
+    grossSales: calc ? calc.grossSales : 0,
+    bundleDiscount: calc ? calc.bundleDiscount : 0,
+    singleParoDiscount: calc ? calc.singleParoDiscount : 0,
+    kampanyalar: (calc && calc.apps) ? calc.apps.map(a => a.name) : [],
+    seciliKar: karYuzde,
+    pay3: latestPay3 || [],
+    pay5: latestPay5 || []
+  };
+
+  const list = JSON.parse(localStorage.getItem("teklifler") || "[]");
+  list.unshift(teklif);
+  localStorage.setItem("teklifler", JSON.stringify(list));
+
+  alert("✅ \"" + musteri + "\" için teklif kaydedildi!\nTeklifler sayfasından görebilirsiniz.");
+}
+
+
 
 loadExcel();
 </script>
