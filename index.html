@@ -279,7 +279,18 @@
         <input type="radio" name="karOrani" id="karList" value="list" style="width:16px;height:16px;accent-color:#16a085">
         Liste Fiyatı
       </label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #c8d8f5;border-radius:999px;padding:6px 10px">
+          <span style="font-size:12px;font-weight:800;color:#1a1a2e;white-space:nowrap">Eski Ürün:</span>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;font-weight:700;color:#175c2b;white-space:nowrap">
+            <input type="radio" name="eskiDurumu" id="eskiVar" value="var" checked style="width:15px;height:15px;accent-color:#008a35">
+            Eski var
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;font-weight:700;color:#8a0000;white-space:nowrap">
+            <input type="radio" name="eskiDurumu" id="eskiYok" value="yok" style="width:15px;height:15px;accent-color:#e50914">
+            Eski yok
+          </label>
+        </div>
         <button onclick="saveTeklif()" style="background:#0f3460;font-size:13px;padding:7px 14px">💾 Kaydet</button>
         <button onclick="whatsappTeklif()" style="background:#25D366;font-size:13px;padding:7px 14px">📲 WhatsApp</button>
         <button onclick="printTeklif()" style="background:#555;font-size:13px;padding:7px 14px">🖨️ Yazdır / PDF</button>
@@ -292,6 +303,7 @@
       Ürün satırlarında tekil Paro ve Paro destek bilgi olarak görünür.
       Sete giren üründe tekil Paro satıştan tekrar düşmez; set maliyet desteği alış maliyetinden düşer.
       BE/Klima + Dondurucu kampanyası sadece Excel’deki kod listesine göre eşleşir.
+      Eski yok seçilirse 15.000 / 20.000 değişim ankastre kampanyaları kapatılır ve ürünler tekil hesaplanır.
     </div>
 
     <div style="overflow:auto">
@@ -498,6 +510,15 @@ let latestPayList = [];
 let currentComplementProductId = null;
 
 const $ = id => document.getElementById(id);
+
+function hasEskiUrun(){
+  const el = document.querySelector('input[name="eskiDurumu"]:checked');
+  return !el || el.value !== "yok";
+}
+
+function getEskiDurumu(){
+  return hasEskiUrun() ? "Eski var" : "Eski yok";
+}
 
 function norm(v){
   return String(v ?? "")
@@ -767,6 +788,8 @@ function buildRuleApplications(){
   const apps = [];
 
   for(const r of bundleRules){
+    if(!hasEskiUrun() && DEGISIM_RULES.has(r.ruleId)) continue;
+
     // 3'lü ankastre kuralları ayrı işleniyor
     if(UCLU_ANK_RULES.has(r.ruleId)) continue;
 
@@ -810,6 +833,7 @@ function buildRuleApplications(){
   // 3'lü ankastre kuralları: fırın + ocak + davlumbaz eşleşmesi (kod bazlı önce, sonra isim)
   for(const r of bundleRules){
     if(!UCLU_ANK_RULES.has(r.ruleId)) continue;
+    if(!hasEskiUrun() && DEGISIM_RULES.has(r.ruleId)) continue;
 
     // leftCodes = fırın+ocak+davlumbaz hepsini içeriyor (sol_kodlar alanında birleşik)
     // rightCodes = dondurucu (ANK_SET_DONDURUCU için) ya da boş (ANK_UCLU, DEĞİŞİM için)
@@ -1473,6 +1497,7 @@ function escapeHtml(v){
 
 $("search").addEventListener("input", renderSearch);
 document.querySelectorAll('input[name="karOrani"]').forEach(el => el.addEventListener("change", renderInstallment));
+document.querySelectorAll('input[name="eskiDurumu"]').forEach(el => el.addEventListener("change", renderAll));
 
 // Tarih otomatik doldur
 (function(){
@@ -1504,6 +1529,7 @@ function buildTeklifMsg(karYuzde){
   let msg = "🏪 *Şaşmazer Teklif*\n";
   if(musteri) msg += "👤 " + musteri + "\n";
   if(tarih)   msg += "📅 " + tarih + "\n";
+  msg += "♻️ " + getEskiDurumu() + "\n";
   msg += "──────────────────\n";
 
   for(const item of cart){
@@ -1640,6 +1666,7 @@ function saveTeklif(){
     bundleDiscount: calc ? calc.bundleDiscount : 0,
     singleParoDiscount: calc ? calc.singleParoDiscount : 0,
     kampanyalar: (calc && calc.apps) ? calc.apps.map(a => a.name) : [],
+    eskiDurumu: getEskiDurumu(),
     seciliKar: karYuzde,
     pay3: latestPay3 || [],
     pay5: latestPay5 || [],
