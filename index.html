@@ -59,6 +59,8 @@
     .campTitle{font-weight:bold;color:#8a4b00;margin-bottom:8px}
     .campItem{background:white;border:1px solid #f3d27a;border-radius:8px;padding:10px;margin:8px 0}
     .small{font-size:12px;color:#33506f}
+    .marginCheck{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:4px;font-size:11px;color:#33506f}
+    .marginCheck b{font-size:12px;color:#002b5c}
     .hr{border-top:1px solid #aaa;margin:10px 0}
 
     .payGrid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:18px;margin-top:14px}
@@ -344,6 +346,7 @@
       <div class="summaryLine disc"><span>Kombin İndirimi:</span><b id="bundleDiscount">₺0</b></div>
       <div class="hr"></div>
       <div class="summaryLine total"><span>İndirimli Satış Fiyatı:</span><b id="netSales">₺0</b></div>
+      <div class="marginCheck"><span>Marj</span><b id="profitMargin">%0</b></div>
       <div class="small">Satış indirimi detayı: Set dışı Paro + kombin kampanya indirimi. Set içindeki tekil Paro sadece bilgi amaçlı gösterilir.</div>
     </div>
   </div>
@@ -449,6 +452,8 @@ if(sessionStorage.getItem("sasmazerLogin") === "ok"){
 }
 
 const FILE_NAME = "sasmazer-web-data.xlsx";
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxNzhuPhLoSIrZ-JvQ1HrV4Aa78C_Pev6p7MQxZUdSY7n6AkgmWJ_HJoHN9Piq0Km-wjQ/exec";
+
 
 const FIXED_SUPPORT = {
   SOGUTUCU_TKM: 10114,
@@ -1283,6 +1288,10 @@ function renderSummary(calc){
   $("bundleDiscount").textContent = negMoney(calc.bundleDiscount);
   $("netSales").textContent = money(calc.netSales);
 
+  const margin = calc.netCost > 0 ? ((calc.netSales / calc.netCost) - 1) * 100 : 0;
+  const marginEl = $("profitMargin");
+  if(marginEl) marginEl.textContent = "%" + Math.round(margin).toLocaleString("tr-TR");
+
   renderInstallment();
 }
 
@@ -1439,6 +1448,50 @@ function renderCampaignDetails(calc){
   box.innerHTML = html;
 }
 
+function productSearchScore(p, q, terms){
+  const code = codeNorm(p.code);
+  const name = norm(p.name);
+  const group = norm(p.group);
+  const brand = norm(p.brand);
+  const text = productText(p);
+
+  let score = 0;
+
+  // En önemli öncelik: kullanıcı model adını yazınca ürün adı bununla başlıyorsa en üste gelsin.
+  // Örn: "1011" aramasında "1011 KMP I" ve "1011 KMP IG" üstte görünür.
+  if(name === q) score += 10000;
+  else if(name.startsWith(q + " ") || name.startsWith(q)) score += 9000;
+  else if(name.includes(" " + q + " ")) score += 4500;
+  else if(name.includes(q)) score += 3000;
+
+  // SAP kodu / ürün kodu ile aramalarda da birebir ve başlangıç eşleşmesini öne al.
+  if(code === q) score += 8500;
+  else if(code.startsWith(q)) score += 7500;
+  else if(code.includes(q)) score += 2500;
+
+  // Grup ve marka eşleşmeleri daha düşük öncelikte kalsın.
+  if(group.startsWith(q)) score += 1200;
+  else if(group.includes(q)) score += 600;
+
+  if(brand.startsWith(q)) score += 300;
+  else if(brand.includes(q)) score += 100;
+
+  // Çok kelimeli aramada her kelimenin ürün adında başlaması/olması ayrıca puan kazandırsın.
+  for(const term of terms){
+    if(name.startsWith(term)) score += 700;
+    else if(name.includes(" " + term)) score += 300;
+    else if(name.includes(term)) score += 150;
+
+    if(code.startsWith(term)) score += 500;
+    else if(code.includes(term)) score += 120;
+  }
+
+  // Sepete eklenmemiş ürünleri aynı puanda az da olsa üstte tut.
+  if(!isAdded(p.id)) score += 5;
+
+  return score;
+}
+
 function renderSearch(){
   const q = norm($("search").value);
   const results = $("results");
@@ -1450,10 +1503,20 @@ function renderSearch(){
 
   const terms = q.split(" ").filter(Boolean);
 
-  const found = products.filter(p => {
-    const t = productText(p);
-    return terms.every(term => t.includes(term));
-  }).slice(0, 25);
+  const found = products
+    .filter(p => {
+      const t = productText(p);
+      return terms.every(term => t.includes(term));
+    })
+    .map((p, idx) => ({ p, idx, score: productSearchScore(p, q, terms) }))
+    .sort((a, b) => {
+      if(b.score !== a.score) return b.score - a.score;
+      const nameCompare = a.p.name.localeCompare(b.p.name, "tr");
+      if(nameCompare !== 0) return nameCompare;
+      return a.idx - b.idx;
+    })
+    .slice(0, 25)
+    .map(x => x.p);
 
   if(!found.length){
     results.innerHTML = `<div class="muted">Ürün bulunamadı.</div>`;
@@ -1643,6 +1706,51 @@ function printTeklif(){
   win.document.close();
 }
 
+
+function buildGoogleSheetTeklifPayload(teklif){
+  const calc = latestCalc || {};
+  const urunlerText = (teklif.urunler || [])
+    .map(u => (u.qty || 1) + " x " + u.name + " (" + u.code + ")")
+    .join(" | ");
+
+  const margin = calc.netCost > 0 ? (((calc.netSales || 0) / calc.netCost) - 1) * 100 : 0;
+
+  return {
+    tarih: teklif.tarih || "",
+    musteriAdi: teklif.musteri || "",
+    telefon: teklif.telefon || "",
+    urunler: urunlerText,
+    indirimsizSatis: Math.round(teklif.grossSales || 0),
+    indirimliSatis: Math.round(teklif.netSatis || 0),
+    netMaliyet: Math.round(calc.netCost || 0),
+    marj: "%" + margin.toLocaleString("tr-TR", {maximumFractionDigits: 1}),
+    teklifOrani: String(teklif.seciliKar || ""),
+    eskiUrunDurumu: teklif.eskiDurumu || "",
+    kayitTarihi: teklif.kaydTarihi || new Date().toLocaleString("tr-TR"),
+    kampanyalar: (teklif.kampanyalar || []).join(" | "),
+    bundleDiscount: Math.round(teklif.bundleDiscount || 0),
+    singleParoDiscount: Math.round(teklif.singleParoDiscount || 0),
+    id: teklif.id
+  };
+}
+
+function sendTeklifToGoogleSheet(teklif){
+  if(!GOOGLE_SHEET_URL) return;
+
+  const payload = buildGoogleSheetTeklifPayload(teklif);
+
+  fetch(GOOGLE_SHEET_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  }).catch(err => {
+    console.warn("Google Sheet kayıt gönderimi başarısız:", err);
+  });
+}
+
 // ── Teklif Kaydet / Geçmiş ────────────────────────────────
 function saveTeklif(){
   if(!cart.length){ alert("Sepette ürün yok."); return; }
@@ -1678,8 +1786,9 @@ function saveTeklif(){
   const list = JSON.parse(localStorage.getItem("teklifler") || "[]");
   list.unshift(teklif);
   localStorage.setItem("teklifler", JSON.stringify(list));
+  sendTeklifToGoogleSheet(teklif);
 
-  alert("✅ \"" + musteri + "\" için teklif kaydedildi!\nTeklifler sayfasından görebilirsiniz.");
+  alert("✅ \"" + musteri + "\" için teklif kaydedildi!\nTeklif bu bilgisayara kaydedildi ve Google Sheet'e gönderildi.");
 }
 
 
